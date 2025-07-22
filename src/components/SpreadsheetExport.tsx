@@ -175,125 +175,174 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     console.log('=== CSV Export Debug Info ===');
     console.log('Selected elements count:', selectedElements.size);
     console.log('Total elements count:', prototype.textElements.length);
-    console.log('Prototype name:', prototype.name);
+    console.log('Prototype:', prototype);
     
     try {
-      // First, ensure we have selected elements
-      if (selectedElements.size === 0) {
-        console.log('No elements selected, selecting all elements...');
-        const allElementIds = new Set(prototype.textElements.map(el => el.id));
-        setSelectedElements(allElementIds);
-        
-        // Give React time to update state and try again
-        setTimeout(() => {
-          handleExport();
-        }, 100);
+      // Simplified approach - always work with all elements to avoid state issues
+      const elementsToExport = prototype.textElements;
+      console.log('Elements to export:', elementsToExport.length);
+      
+      if (elementsToExport.length === 0) {
+        alert('No text elements found in this prototype to export.');
         return;
       }
       
-      const csvContent = generateCSV();
-      console.log('CSV content generated, length:', csvContent.length);
-      console.log('CSV preview (first 200 chars):', csvContent.substring(0, 200));
+      // Generate simple CSV without complex screenshot processing
+      const csvData = elementsToExport.map((element, index) => {
+        console.log(`Processing element ${index + 1}/${elementsToExport.length}:`, element.id);
+        
+        // Simple screenshot generation or use existing
+        let screenshot = '';
+        try {
+          screenshot = element.image || 'No screenshot available';
+        } catch (screenshotError) {
+          console.warn('Screenshot generation failed for', element.id, screenshotError);
+          screenshot = 'Screenshot generation failed';
+        }
+        
+        return {
+          id: element.id || `element_${index}`,
+          original_text: (element.originalText || '').replace(/"/g, '""'), // Escape quotes
+          edited_text: '', // Empty for editing
+          frame_name: (element.frameName || 'Unknown Frame').replace(/"/g, '""'),
+          component_path: (element.componentPath || 'Unknown Path').replace(/"/g, '""'),
+          component_type: element.componentType || 'unknown',
+          screen_section: element.screenSection || 'unknown',
+          hierarchy: (element.hierarchy || '').replace(/"/g, '""'),
+          priority: element.priority || 'medium',
+          is_interactive: element.isInteractive ? 'Yes' : 'No',
+          font_size: element.fontSize?.toString() || '',
+          font_weight: element.fontWeight || '',
+          nearby_elements: (element.nearbyElements?.join('; ') || '').replace(/"/g, '""'),
+          element_role: element.elementRole || '',
+          extraction_confidence: element.extractionMetadata?.confidence?.toString() || '',
+          extraction_source: element.extractionMetadata?.source || '',
+          bounding_box: element.boundingBox ? 
+            `${element.boundingBox.x},${element.boundingBox.y},${element.boundingBox.width},${element.boundingBox.height}` : '',
+          context_notes: (element.contextNotes || '').replace(/"/g, '""'),
+          has_screenshot: screenshot !== 'No screenshot available' ? 'Yes' : 'No'
+        };
+      });
       
-      if (!csvContent || csvContent.trim() === '') {
-        console.error('Empty CSV content generated');
-        alert('No data to export. The prototype may not have any text elements.');
+      console.log('CSV data prepared:', csvData.length, 'rows');
+      
+      // Manual CSV creation to avoid parser issues
+      const headers = [
+        'id', 'original_text', 'edited_text', 'frame_name', 'component_path',
+        'component_type', 'screen_section', 'hierarchy', 'priority', 'is_interactive',
+        'font_size', 'font_weight', 'nearby_elements', 'element_role',
+        'extraction_confidence', 'extraction_source', 'bounding_box', 'context_notes', 'has_screenshot'
+      ];
+      
+      const csvLines = [headers.join(',')];
+      
+      csvData.forEach(row => {
+        const line = headers.map(header => {
+          const value = row[header] || '';
+          // Wrap in quotes if contains comma, newline, or quote
+          if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+            return `"${value}"`;
+          }
+          return value;
+        }).join(',');
+        csvLines.push(line);
+      });
+      
+      const csvContent = csvLines.join('\n');
+      console.log('Final CSV content length:', csvContent.length);
+      console.log('CSV preview (first 300 chars):', csvContent.substring(0, 300));
+      
+      if (!csvContent || csvContent.length < 50) {
+        console.error('Generated CSV content is too short or empty');
+        alert('Failed to generate CSV content. Please try again.');
         return;
       }
       
-      // Try multiple download methods for better browser compatibility
+      // Ultra-simple download method
+      const filename = `${(prototype.name || 'prototype').replace(/[^a-zA-Z0-9\s]/g, '_')}_text_elements.csv`;
+      console.log('Download filename:', filename);
       
-      // Method 1: Standard blob download
-      try {
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        console.log('Blob created, size:', blob.size, 'type:', blob.type);
-        
-        // Check if browser supports createObjectURL
-        if (window.URL && window.URL.createObjectURL) {
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      console.log('Blob created, size:', blob.size);
+      
+      // Force download using multiple methods
+      let downloadSuccess = false;
+      
+      // Method 1: Modern browsers
+      if (!downloadSuccess && window.URL && window.URL.createObjectURL) {
+        try {
           const url = URL.createObjectURL(blob);
-          console.log('Object URL created:', url.substring(0, 50) + '...');
-          
           const link = document.createElement('a');
-          const filename = `${prototype.name.replace(/[^a-zA-Z0-9\s]/g, '_')}_text_elements.csv`;
-          console.log('Download filename:', filename);
-          
           link.href = url;
           link.download = filename;
           link.style.display = 'none';
           
+          // Force the download by simulating user interaction
           document.body.appendChild(link);
-          console.log('Link added to DOM, triggering click...');
-          
           link.click();
-          console.log('Link clicked');
+          document.body.removeChild(link);
           
-          // Clean up
-          setTimeout(() => {
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            console.log('Cleanup completed');
-          }, 100);
-          
-          alert('CSV download should have started! Check your downloads folder.');
-          onExportComplete();
-          return;
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          downloadSuccess = true;
+          console.log('Blob download method succeeded');
+        } catch (error) {
+          console.error('Blob download failed:', error);
         }
-      } catch (blobError) {
-        console.error('Blob download method failed:', blobError);
       }
       
-      // Method 2: Data URI fallback
-      try {
-        console.log('Trying data URI method...');
-        const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-        const link = document.createElement('a');
-        const filename = `${prototype.name.replace(/[^a-zA-Z0-9\s]/g, '_')}_text_elements.csv`;
-        
-        link.href = dataUri;
-        link.download = filename;
-        link.style.display = 'none';
-        
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        console.log('Data URI download triggered');
-        alert('CSV download initiated using fallback method!');
+      // Method 2: Data URL fallback
+      if (!downloadSuccess) {
+        try {
+          const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = filename;
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          downloadSuccess = true;
+          console.log('Data URL download method succeeded');
+        } catch (error) {
+          console.error('Data URL download failed:', error);
+        }
+      }
+      
+      // Method 3: Show content for manual save
+      if (!downloadSuccess) {
+        console.log('All download methods failed, showing content');
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(`
+            <html>
+              <head><title>CSV Export - ${filename}</title></head>
+              <body>
+                <h3>CSV Export</h3>
+                <p>Copy the content below and save it as a .csv file:</p>
+                <textarea style="width:100%;height:400px;font-family:monospace;">${csvContent}</textarea>
+                <br><br>
+                <button onclick="navigator.clipboard.writeText(document.querySelector('textarea').value)">Copy to Clipboard</button>
+              </body>
+            </html>
+          `);
+          downloadSuccess = true;
+        }
+      }
+      
+      if (downloadSuccess) {
+        alert(`CSV export completed! ${csvData.length} elements exported.`);
         onExportComplete();
-        return;
-      } catch (dataUriError) {
-        console.error('Data URI download method failed:', dataUriError);
-      }
-      
-      // Method 3: Copy to clipboard as last resort
-      try {
-        console.log('Trying clipboard method...');
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(csvContent).then(() => {
-            alert('Download failed, but CSV data has been copied to your clipboard. You can paste it into a text editor and save as .csv');
-            onExportComplete();
-          });
-          return;
-        }
-      } catch (clipboardError) {
-        console.error('Clipboard method failed:', clipboardError);
-      }
-      
-      // If all methods fail, show the data in a new window
-      console.log('All download methods failed, opening in new window...');
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write('<pre>' + csvContent + '</pre>');
-        newWindow.document.title = 'CSV Data - Copy and Save';
-        alert('Download failed. The CSV data is displayed in a new window. Please copy it and save as a .csv file.');
       } else {
-        alert('Download failed and popup was blocked. Please check your browser settings and try again.');
+        alert('Download failed. Please try refreshing the page and trying again, or check if downloads are blocked in your browser.');
       }
       
     } catch (error) {
-      console.error('Export error details:', error);
+      console.error('CSV Export Error:', error);
       console.error('Error stack:', error.stack);
-      alert(`Failed to export CSV: ${error.message}. Please try refreshing the page and trying again.`);
+      alert(`CSV export failed: ${error.message}`);
     }
   };
 
@@ -352,30 +401,15 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     }
   };
 
-  // Simple test function to debug CSV generation
-  const testCSVGeneration = () => {
-    console.log('=== Testing CSV Generation ===');
-    try {
-      // Select all elements for testing
-      const allElementIds = new Set(prototype.textElements.map(el => el.id));
-      setSelectedElements(allElementIds);
-      
-      setTimeout(() => {
-        console.log('Selected elements after setting:', selectedElements.size);
-        const testCSV = generateCSV();
-        console.log('Test CSV generated:', testCSV ? 'SUCCESS' : 'FAILED');
-        console.log('CSV length:', testCSV.length);
-        if (testCSV) {
-          const lines = testCSV.split('\n');
-          console.log('CSV has', lines.length, 'lines');
-          console.log('Header:', lines[0]);
-          if (lines[1]) console.log('First row:', lines[1]);
-        }
-      }, 100);
-      
-    } catch (error) {
-      console.error('Test failed:', error);
+  // Quick test to see if we have data
+  const testDataAvailable = () => {
+    console.log('=== Quick Data Test ===');
+    console.log('Prototype:', prototype);
+    console.log('Text elements:', prototype.textElements?.length || 0);
+    if (prototype.textElements?.length > 0) {
+      console.log('First element:', prototype.textElements[0]);
     }
+    alert(`Found ${prototype.textElements?.length || 0} text elements to export`);
   };
 
   const toggleElementSelection = (elementId: string) => {
@@ -436,11 +470,18 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
             
             <div className="flex items-center space-x-3">
               <button
+                onClick={testDataAvailable}
+                className="inline-flex items-center px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm"
+              >
+                Test Data
+              </button>
+              
+              <button
                 onClick={handleExport}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export CSV ({selectedElements.size || 'All'})
+                Export CSV ({prototype.textElements?.length || 0} elements)
               </button>
               
               <button

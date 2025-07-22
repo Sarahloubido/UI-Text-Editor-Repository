@@ -148,45 +148,165 @@ export const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
   };
 
   const exportCurrentState = () => {
-    const csvData = editingElements.map((element, index) => {
-      // Ensure each element has a screenshot
-      const screenshot = element.image || generateElementScreenshot(element, index);
-      
-      return {
-        id: element.id,
-        original_text: element.originalText,
-        edited_text: element.editedText || '',
-        frame_name: element.frameName,
-        component_path: element.componentPath,
-        component_type: element.componentType || 'unknown',
-        screen_section: element.screenSection || 'unknown',
-        hierarchy: element.hierarchy || '',
-        priority: element.priority || 'medium',
-        is_interactive: element.isInteractive ? 'Yes' : 'No',
-        font_size: element.fontSize?.toString() || '',
-        font_weight: element.fontWeight || '',
-        nearby_elements: element.nearbyElements?.join('; ') || '',
-        element_role: element.elementRole || '',
-        extraction_confidence: element.extractionMetadata?.confidence?.toString() || '',
-        extraction_source: element.extractionMetadata?.source || '',
-        bounding_box: `${element.boundingBox.x},${element.boundingBox.y},${element.boundingBox.width},${element.boundingBox.height}`,
-        context_notes: element.contextNotes || '',
-        screenshot_url: screenshot.substring(0, 50) + '...', // Truncate for CSV readability
-        screenshot_filename: `${element.id}_screenshot.png`
-      };
-    });
-
-    const csvContent = CSVParser.stringify(csvData);
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
+    console.log('=== SpreadsheetEditor CSV Export ===');
+    console.log('Editing elements count:', editingElements.length);
     
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'edited_text_elements.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      if (editingElements.length === 0) {
+        alert('No elements to export.');
+        return;
+      }
+
+      const csvData = editingElements.map((element, index) => {
+        console.log(`Processing element ${index + 1}/${editingElements.length}:`, element.id);
+        
+        // Simple screenshot handling to avoid errors
+        let screenshot = '';
+        try {
+          screenshot = element.image || generateElementScreenshot(element, index);
+        } catch (screenshotError) {
+          console.warn('Screenshot generation failed for', element.id, screenshotError);
+          screenshot = 'Screenshot generation failed';
+        }
+        
+        return {
+          id: element.id || `element_${index}`,
+          original_text: (element.originalText || '').replace(/"/g, '""'), // Escape quotes for CSV
+          edited_text: (element.editedText || '').replace(/"/g, '""'), // Include edited text
+          frame_name: (element.frameName || 'Unknown Frame').replace(/"/g, '""'),
+          component_path: (element.componentPath || 'Unknown Path').replace(/"/g, '""'),
+          component_type: element.componentType || 'unknown',
+          screen_section: element.screenSection || 'unknown',
+          hierarchy: (element.hierarchy || '').replace(/"/g, '""'),
+          priority: element.priority || 'medium',
+          is_interactive: element.isInteractive ? 'Yes' : 'No',
+          font_size: element.fontSize?.toString() || '',
+          font_weight: element.fontWeight || '',
+          nearby_elements: (element.nearbyElements?.join('; ') || '').replace(/"/g, '""'),
+          element_role: element.elementRole || '',
+          extraction_confidence: element.extractionMetadata?.confidence?.toString() || '',
+          extraction_source: element.extractionMetadata?.source || '',
+          bounding_box: element.boundingBox ? 
+            `${element.boundingBox.x},${element.boundingBox.y},${element.boundingBox.width},${element.boundingBox.height}` : '',
+          context_notes: (element.contextNotes || '').replace(/"/g, '""'),
+          has_screenshot: screenshot !== 'Screenshot generation failed' ? 'Yes' : 'No',
+          last_modified: element.lastModified ? element.lastModified.toISOString() : ''
+        };
+      });
+
+      console.log('CSV data prepared:', csvData.length, 'rows');
+
+      // Manual CSV creation for better reliability
+      const headers = [
+        'id', 'original_text', 'edited_text', 'frame_name', 'component_path',
+        'component_type', 'screen_section', 'hierarchy', 'priority', 'is_interactive',
+        'font_size', 'font_weight', 'nearby_elements', 'element_role',
+        'extraction_confidence', 'extraction_source', 'bounding_box', 'context_notes', 
+        'has_screenshot', 'last_modified'
+      ];
+      
+      const csvLines = [headers.join(',')];
+      
+      csvData.forEach(row => {
+        const line = headers.map(header => {
+          const value = row[header] || '';
+          // Wrap in quotes if contains comma, newline, or quote
+          if (value.includes(',') || value.includes('\n') || value.includes('"')) {
+            return `"${value}"`;
+          }
+          return value;
+        }).join(',');
+        csvLines.push(line);
+      });
+      
+      const csvContent = csvLines.join('\n');
+      console.log('Final CSV content length:', csvContent.length);
+
+      if (!csvContent || csvContent.length < 50) {
+        console.error('Generated CSV content is too short or empty');
+        alert('Failed to generate CSV content. Please try again.');
+        return;
+      }
+
+      // Reliable download with fallbacks
+      const filename = 'edited_text_elements.csv';
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      console.log('Blob created, size:', blob.size);
+
+      let downloadSuccess = false;
+
+      // Method 1: Modern browsers
+      if (!downloadSuccess && window.URL && window.URL.createObjectURL) {
+        try {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          downloadSuccess = true;
+          console.log('Blob download method succeeded');
+        } catch (error) {
+          console.error('Blob download failed:', error);
+        }
+      }
+
+      // Method 2: Data URL fallback
+      if (!downloadSuccess) {
+        try {
+          const dataUrl = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+          const link = document.createElement('a');
+          link.href = dataUrl;
+          link.download = filename;
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          downloadSuccess = true;
+          console.log('Data URL download method succeeded');
+        } catch (error) {
+          console.error('Data URL download failed:', error);
+        }
+      }
+
+      // Method 3: Show content for manual save
+      if (!downloadSuccess) {
+        console.log('All download methods failed, showing content');
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(`
+            <html>
+              <head><title>CSV Export - ${filename}</title></head>
+              <body>
+                <h3>CSV Export - Edited Elements</h3>
+                <p>Copy the content below and save it as a .csv file:</p>
+                <textarea style="width:100%;height:400px;font-family:monospace;">${csvContent}</textarea>
+                <br><br>
+                <button onclick="navigator.clipboard.writeText(document.querySelector('textarea').value)">Copy to Clipboard</button>
+              </body>
+            </html>
+          `);
+          downloadSuccess = true;
+        }
+      }
+
+      if (downloadSuccess) {
+        alert(`CSV export completed! ${csvData.length} elements exported with their edits.`);
+      } else {
+        alert('Download failed. Please try refreshing the page and trying again.');
+      }
+
+    } catch (error) {
+      console.error('CSV Export Error:', error);
+      alert(`CSV export failed: ${error.message}`);
+    }
   };
 
   const changedElementsCount = editingElements.filter(el => el.editedText && el.editedText !== el.originalText).length;

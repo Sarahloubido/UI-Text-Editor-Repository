@@ -53,12 +53,14 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
       const extractedData = await extractor.extractFromURL(url);
       console.log('Extracted', extractedData.textElements.length, 'text elements from URL');
       
-      const source = url.includes('figma.com') ? 'figma' : url.includes('cursor.') ? 'cursor' : 'bolt';
+      const source = url.includes('figma.com') ? 'figma' : 
+                     url.includes('cursor.') ? 'cursor' : 
+                     url.includes('github.com') ? 'github' : 'bolt';
       
       const prototype: Prototype = {
         id: `proto_${Date.now()}`,
         name: `Imported from ${source}`,
-        source: source as 'bolt' | 'figma' | 'cursor',
+        source: source as 'bolt' | 'figma' | 'cursor' | 'github',
         url,
         textElements: extractedData.textElements,
         createdAt: new Date(),

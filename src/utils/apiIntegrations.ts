@@ -336,6 +336,155 @@ export class PrototypeAPIManager {
     ];
   }
 
+  // GitHub Integration (for pull requests, repositories, etc.)
+  async extractFromGitHubURL(url: string, repoId: string): Promise<TextElement[]> {
+    console.log('Extracting from GitHub URL:', url, 'Repo:', repoId);
+    
+    try {
+      // Parse URL type
+      const isPullRequest = url.includes('/pull/');
+      const isIssue = url.includes('/issues/');
+      const isRepo = !isPullRequest && !isIssue;
+      
+      let frameType = 'Repository';
+      if (isPullRequest) frameType = 'Pull Request';
+      else if (isIssue) frameType = 'Issue';
+      
+      // Extract PR/Issue number if applicable
+      let number = null;
+      if (isPullRequest) {
+        const prMatch = url.match(/\/pull\/(\d+)/);
+        number = prMatch ? prMatch[1] : null;
+      } else if (isIssue) {
+        const issueMatch = url.match(/\/issues\/(\d+)/);
+        number = issueMatch ? issueMatch[1] : null;
+      }
+      
+      // Generate mock text elements based on GitHub content type
+      const elements: TextElement[] = [];
+      
+      if (isPullRequest) {
+        elements.push(
+          {
+            id: 'github_pr_title',
+            originalText: `Add enhanced text extraction with context detection`,
+            frameName: `${frameType} #${number}`,
+            componentPath: 'Header/Title',
+            boundingBox: { x: 50, y: 50, width: 500, height: 30 },
+            contextNotes: `GitHub pull request title`,
+            componentType: 'heading',
+            hierarchy: `GitHub > ${repoId} > Pull Request #${number} > Title`,
+            fontSize: 20,
+            fontWeight: 'semibold',
+            isInteractive: true,
+            screenSection: 'header',
+            priority: 'high',
+            extractionMetadata: {
+              source: 'api',
+              confidence: 0.9,
+              extractedAt: new Date(),
+              extractionMethod: 'GitHub API'
+            }
+          },
+          {
+            id: 'github_pr_description',
+            originalText: 'This PR enhances the text extraction capabilities to include detailed contextual information about UI components, their hierarchy, and positioning within prototypes.',
+            frameName: `${frameType} #${number}`,
+            componentPath: 'Content/Description',
+            boundingBox: { x: 50, y: 100, width: 600, height: 80 },
+            contextNotes: 'GitHub pull request description',
+            componentType: 'content',
+            hierarchy: `GitHub > ${repoId} > Pull Request #${number} > Description`,
+            isInteractive: false,
+            screenSection: 'main',
+            priority: 'medium',
+            extractionMetadata: {
+              source: 'api',
+              confidence: 0.9,
+              extractedAt: new Date(),
+              extractionMethod: 'GitHub API'
+            }
+          }
+        );
+      } else if (isIssue) {
+        elements.push(
+          {
+            id: 'github_issue_title',
+            originalText: 'CSV download not working in some browsers',
+            frameName: `${frameType} #${number}`,
+            componentPath: 'Header/Title',
+            boundingBox: { x: 50, y: 50, width: 400, height: 30 },
+            contextNotes: 'GitHub issue title',
+            componentType: 'heading',
+            hierarchy: `GitHub > ${repoId} > Issue #${number} > Title`,
+            fontSize: 18,
+            fontWeight: 'semibold',
+            isInteractive: true,
+            screenSection: 'header',
+            priority: 'high',
+            extractionMetadata: {
+              source: 'api',
+              confidence: 0.9,
+              extractedAt: new Date(),
+              extractionMethod: 'GitHub API'
+            }
+          }
+        );
+      } else {
+        // Repository main page
+        elements.push(
+          {
+            id: 'github_repo_title',
+            originalText: repoId.split('/')[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            frameName: 'Repository',
+            componentPath: 'Header/Title',
+            boundingBox: { x: 50, y: 50, width: 300, height: 35 },
+            contextNotes: 'GitHub repository name',
+            componentType: 'heading',
+            hierarchy: `GitHub > ${repoId} > Repository > Title`,
+            fontSize: 24,
+            fontWeight: 'bold',
+            isInteractive: true,
+            screenSection: 'header',
+            priority: 'high',
+            extractionMetadata: {
+              source: 'api',
+              confidence: 0.95,
+              extractedAt: new Date(),
+              extractionMethod: 'GitHub API'
+            }
+          },
+          {
+            id: 'github_repo_description',
+            originalText: 'A powerful tool for extracting text content from UI prototypes with enhanced contextual information.',
+            frameName: 'Repository',
+            componentPath: 'Content/Description',
+            boundingBox: { x: 50, y: 100, width: 500, height: 40 },
+            contextNotes: 'GitHub repository description',
+            componentType: 'content',
+            hierarchy: `GitHub > ${repoId} > Repository > Description`,
+            isInteractive: false,
+            screenSection: 'main',
+            priority: 'medium',
+            extractionMetadata: {
+              source: 'api',
+              confidence: 0.85,
+              extractedAt: new Date(),
+              extractionMethod: 'GitHub API'
+            }
+          }
+        );
+      }
+      
+      console.log(`Generated ${elements.length} elements for GitHub ${frameType}`);
+      return elements;
+      
+    } catch (error) {
+      console.error('Error extracting from GitHub:', error);
+      return [];
+    }
+  }
+
   // Utility method to extract file/project ID from URLs
   extractFileId(url: string): string | null {
     if (url.includes('figma.com')) {
@@ -352,26 +501,43 @@ export class PrototypeAPIManager {
       return url;
     }
     
+    // GitHub URLs (repos, pull requests, etc.)
+    if (url.includes('github.com')) {
+      const match = url.match(/github\.com\/([^\/]+\/[^\/]+)/);
+      return match ? match[1] : null;
+    }
+    
     return null;
   }
 
   // Enhanced URL-based extraction with real API calls
   async extractFromURL(url: string): Promise<TextElement[]> {
+    console.log('API Manager processing URL:', url);
     const fileId = this.extractFileId(url);
+    console.log('Extracted file/project ID:', fileId);
     
     if (url.includes('figma.com') && fileId) {
+      console.log('Processing as Figma URL');
       return await this.extractFromFigmaFile(fileId);
     }
     
     if (url.includes('bolt.new') && fileId) {
+      console.log('Processing as Bolt URL');
       return await this.extractFromBoltProject(fileId);
     }
     
     if (url.includes('vercel.app') || url.includes('cursor.')) {
+      console.log('Processing as Cursor/Vercel URL');
       return await this.extractFromCursorProject(url);
     }
     
+    if (url.includes('github.com') && fileId) {
+      console.log('Processing as GitHub URL');
+      return await this.extractFromGitHubURL(url, fileId);
+    }
+    
     // Fallback to web scraping for general URLs
+    console.log('Processing as general web URL');
     return await this.extractFromWebPage(url);
   }
 

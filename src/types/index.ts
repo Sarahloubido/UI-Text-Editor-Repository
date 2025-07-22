@@ -37,7 +37,7 @@ export interface TextElement {
 export interface Prototype {
   id: string;
   name: string;
-  source: 'bolt' | 'figma' | 'cursor';
+  source: 'bolt' | 'figma' | 'cursor' | 'github';
   url?: string;
   textElements: TextElement[];
   createdAt: Date;

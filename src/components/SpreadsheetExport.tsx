@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, FileSpreadsheet, Eye, Search } from 'lucide-react';
+import { Download, FileSpreadsheet, Eye, Search, Image, Archive } from 'lucide-react';
 import { Prototype, TextElement } from '../types';
 import { CSVParser } from '../utils/csvParser';
 
@@ -29,44 +29,206 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
       selectedElements.has(el.id)
     );
     
-    const csvData = selectedTextElements.map(element => ({
-      id: element.id,
-      original_text: element.originalText,
-      edited_text: '', // Empty for writers to fill
-      frame_name: element.frameName,
-      component_path: element.componentPath,
-      component_type: element.componentType || 'unknown',
-      screen_section: element.screenSection || 'unknown',
-      hierarchy: element.hierarchy || '',
-      priority: element.priority || 'medium',
-      is_interactive: element.isInteractive ? 'Yes' : 'No',
-      font_size: element.fontSize || '',
-      font_weight: element.fontWeight || '',
-      nearby_elements: element.nearbyElements?.join('; ') || '',
-      element_role: element.elementRole || '',
-      extraction_confidence: element.extractionMetadata?.confidence || '',
-      extraction_source: element.extractionMetadata?.source || '',
-      context_notes: element.contextNotes || '',
-      image: element.image || ''
-    }));
+    console.log('Generating CSV for', selectedTextElements.length, 'elements');
+    
+    if (selectedTextElements.length === 0) {
+      console.warn('No elements selected for CSV generation');
+      return '';
+    }
+    
+    const csvData = selectedTextElements.map((element, index) => {
+      // Ensure each element has a screenshot
+      const screenshot = element.image || generateElementScreenshot(element, index);
+      
+      return {
+        id: element.id,
+        original_text: element.originalText,
+        edited_text: '', // Empty for writers to fill
+        frame_name: element.frameName,
+        component_path: element.componentPath,
+        component_type: element.componentType || 'unknown',
+        screen_section: element.screenSection || 'unknown',
+        hierarchy: element.hierarchy || '',
+        priority: element.priority || 'medium',
+        is_interactive: element.isInteractive ? 'Yes' : 'No',
+        font_size: element.fontSize?.toString() || '',
+        font_weight: element.fontWeight || '',
+        nearby_elements: element.nearbyElements?.join('; ') || '',
+        element_role: element.elementRole || '',
+        extraction_confidence: element.extractionMetadata?.confidence?.toString() || '',
+        extraction_source: element.extractionMetadata?.source || '',
+        bounding_box: `${element.boundingBox.x},${element.boundingBox.y},${element.boundingBox.width},${element.boundingBox.height}`,
+        context_notes: element.contextNotes || '',
+        screenshot_url: screenshot.substring(0, 50) + '...', // Truncate for CSV readability
+        screenshot_filename: `${element.id}_screenshot.png`
+      };
+    });
 
-    return CSVParser.stringify(csvData);
+    try {
+      const csvString = CSVParser.stringify(csvData);
+      console.log('CSV generated successfully, length:', csvString.length);
+      return csvString;
+    } catch (error) {
+      console.error('Error generating CSV:', error);
+      return '';
+    }
+  };
+
+  // Generate a screenshot for elements that don't have one
+  const generateElementScreenshot = (element: TextElement, index: number): string => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    
+    canvas.width = Math.max(300, element.boundingBox.width + 40);
+    canvas.height = Math.max(150, element.boundingBox.height + 80);
+    
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Border
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    
+    // Component type indicator
+    const typeColor = element.componentType === 'button' ? '#3b82f6' :
+                     element.componentType === 'heading' ? '#8b5cf6' :
+                     element.componentType === 'navigation' ? '#10b981' :
+                     element.componentType === 'form' ? '#f59e0b' :
+                     '#6b7280';
+    
+    ctx.fillStyle = typeColor;
+    ctx.fillRect(10, 10, 280, 6);
+    
+    // Frame name
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(element.frameName, 10, 35);
+    
+    // Component type badge
+    ctx.fillStyle = typeColor;
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(element.componentType || 'unknown', 10, 55);
+    
+    // Text content (wrapped)
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+    const words = element.originalText.split(' ');
+    let line = '';
+    let y = 80;
+    const maxWidth = canvas.width - 20;
+    
+    for (const word of words) {
+      const testLine = line + word + ' ';
+      const metrics = ctx.measureText(testLine);
+      
+      if (metrics.width > maxWidth && line !== '') {
+        ctx.fillText(line, 10, y);
+        line = word + ' ';
+        y += 20;
+      } else {
+        line = testLine;
+      }
+      
+      if (y > canvas.height - 20) break; // Don't overflow
+    }
+    ctx.fillText(line, 10, y);
+    
+    // Priority indicator
+    if (element.priority) {
+      const priorityColor = element.priority === 'high' ? '#ef4444' :
+                           element.priority === 'medium' ? '#f59e0b' : '#6b7280';
+      ctx.fillStyle = priorityColor;
+      ctx.fillRect(canvas.width - 30, 10, 20, 6);
+    }
+    
+    return canvas.toDataURL('image/png');
   };
 
   const handleExport = () => {
-    const csvContent = generateCSV();
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${prototype.name}_text_elements.${exportFormat}`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    onExportComplete();
+    try {
+      const csvContent = generateCSV();
+      
+      if (!csvContent || csvContent.trim() === '') {
+        alert('No data to export. Please ensure text elements are selected.');
+        return;
+      }
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      onExportComplete();
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export CSV. Please try again.');
+    }
+  };
+
+  const handleScreenshotsDownload = () => {
+    try {
+      const selectedTextElements = prototype.textElements.filter(el => 
+        selectedElements.has(el.id)
+      );
+      
+      selectedTextElements.forEach((element, index) => {
+        const screenshot = element.image || generateElementScreenshot(element, index);
+        
+        // Convert data URL to blob
+        const byteCharacters = atob(screenshot.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'image/png' });
+        
+        // Download individual screenshot
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${element.id}_${element.componentType}_screenshot.png`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+      });
+      
+      alert(`Downloaded ${selectedTextElements.length} screenshots successfully!`);
+    } catch (error) {
+      console.error('Screenshots download error:', error);
+      alert('Failed to download screenshots. Please try again.');
+    }
+  };
+
+  const handleExportWithScreenshots = async () => {
+    try {
+      // First download the CSV
+      handleExport();
+      
+      // Then download screenshots after a short delay
+      setTimeout(() => {
+        handleScreenshotsDownload();
+      }, 1000);
+    } catch (error) {
+      console.error('Export with screenshots error:', error);
+      alert('Failed to export with screenshots. Please try again.');
+    }
   };
 
   const toggleElementSelection = (elementId: string) => {
@@ -125,14 +287,34 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
               </div>
             </div>
             
-            <button
-              onClick={handleExport}
-              disabled={selectedElements.size === 0}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Export {selectedElements.size} Elements
-            </button>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleExport}
+                disabled={selectedElements.size === 0}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Export CSV ({selectedElements.size})
+              </button>
+              
+              <button
+                onClick={handleScreenshotsDownload}
+                disabled={selectedElements.size === 0}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Image className="w-4 h-4 mr-2" />
+                Screenshots ({selectedElements.size})
+              </button>
+              
+              <button
+                onClick={handleExportWithScreenshots}
+                disabled={selectedElements.size === 0}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Archive className="w-4 h-4 mr-2" />
+                CSV + Screenshots
+              </button>
+            </div>
           </div>
         </div>
 

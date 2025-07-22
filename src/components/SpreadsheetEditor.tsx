@@ -75,27 +75,106 @@ export const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
     reader.readAsText(file);
   };
 
+  // Generate a screenshot for elements that don't have one
+  const generateElementScreenshot = (element: TextElement, index: number): string => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    
+    canvas.width = Math.max(300, element.boundingBox.width + 40);
+    canvas.height = Math.max(150, element.boundingBox.height + 80);
+    
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Border
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    
+    // Component type indicator
+    const typeColor = element.componentType === 'button' ? '#3b82f6' :
+                     element.componentType === 'heading' ? '#8b5cf6' :
+                     element.componentType === 'navigation' ? '#10b981' :
+                     element.componentType === 'form' ? '#f59e0b' :
+                     '#6b7280';
+    
+    ctx.fillStyle = typeColor;
+    ctx.fillRect(10, 10, 280, 6);
+    
+    // Frame name
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(element.frameName, 10, 35);
+    
+    // Component type badge
+    ctx.fillStyle = typeColor;
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(element.componentType || 'unknown', 10, 55);
+    
+    // Text content (wrapped)
+    ctx.fillStyle = '#374151';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+    const words = element.originalText.split(' ');
+    let line = '';
+    let y = 80;
+    const maxWidth = canvas.width - 20;
+    
+    for (const word of words) {
+      const testLine = line + word + ' ';
+      const metrics = ctx.measureText(testLine);
+      
+      if (metrics.width > maxWidth && line !== '') {
+        ctx.fillText(line, 10, y);
+        line = word + ' ';
+        y += 20;
+      } else {
+        line = testLine;
+      }
+      
+      if (y > canvas.height - 20) break; // Don't overflow
+    }
+    ctx.fillText(line, 10, y);
+    
+    // Priority indicator
+    if (element.priority) {
+      const priorityColor = element.priority === 'high' ? '#ef4444' :
+                           element.priority === 'medium' ? '#f59e0b' : '#6b7280';
+      ctx.fillStyle = priorityColor;
+      ctx.fillRect(canvas.width - 30, 10, 20, 6);
+    }
+    
+    return canvas.toDataURL('image/png');
+  };
+
   const exportCurrentState = () => {
-    const csvData = editingElements.map(element => ({
-      id: element.id,
-      original_text: element.originalText,
-      edited_text: element.editedText || '',
-      frame_name: element.frameName,
-      component_path: element.componentPath,
-      component_type: element.componentType || 'unknown',
-      screen_section: element.screenSection || 'unknown',
-      hierarchy: element.hierarchy || '',
-      priority: element.priority || 'medium',
-      is_interactive: element.isInteractive ? 'Yes' : 'No',
-      font_size: element.fontSize || '',
-      font_weight: element.fontWeight || '',
-      nearby_elements: element.nearbyElements?.join('; ') || '',
-      element_role: element.elementRole || '',
-      extraction_confidence: element.extractionMetadata?.confidence || '',
-      extraction_source: element.extractionMetadata?.source || '',
-      context_notes: element.contextNotes || '',
-      image: element.image || ''
-    }));
+    const csvData = editingElements.map((element, index) => {
+      // Ensure each element has a screenshot
+      const screenshot = element.image || generateElementScreenshot(element, index);
+      
+      return {
+        id: element.id,
+        original_text: element.originalText,
+        edited_text: element.editedText || '',
+        frame_name: element.frameName,
+        component_path: element.componentPath,
+        component_type: element.componentType || 'unknown',
+        screen_section: element.screenSection || 'unknown',
+        hierarchy: element.hierarchy || '',
+        priority: element.priority || 'medium',
+        is_interactive: element.isInteractive ? 'Yes' : 'No',
+        font_size: element.fontSize || '',
+        font_weight: element.fontWeight || '',
+        nearby_elements: element.nearbyElements?.join('; ') || '',
+        element_role: element.elementRole || '',
+        extraction_confidence: element.extractionMetadata?.confidence || '',
+        extraction_source: element.extractionMetadata?.source || '',
+        bounding_box: `${element.boundingBox.x},${element.boundingBox.y},${element.boundingBox.width},${element.boundingBox.height}`,
+        context_notes: element.contextNotes || '',
+        screenshot_url: screenshot,
+        screenshot_filename: `${element.id}_screenshot.png`
+      };
+    });
 
     const csvContent = CSVParser.stringify(csvData);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

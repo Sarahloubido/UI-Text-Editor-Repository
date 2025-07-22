@@ -163,15 +163,15 @@ export const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
         hierarchy: element.hierarchy || '',
         priority: element.priority || 'medium',
         is_interactive: element.isInteractive ? 'Yes' : 'No',
-        font_size: element.fontSize || '',
+        font_size: element.fontSize?.toString() || '',
         font_weight: element.fontWeight || '',
         nearby_elements: element.nearbyElements?.join('; ') || '',
         element_role: element.elementRole || '',
-        extraction_confidence: element.extractionMetadata?.confidence || '',
+        extraction_confidence: element.extractionMetadata?.confidence?.toString() || '',
         extraction_source: element.extractionMetadata?.source || '',
         bounding_box: `${element.boundingBox.x},${element.boundingBox.y},${element.boundingBox.width},${element.boundingBox.height}`,
         context_notes: element.contextNotes || '',
-        screenshot_url: screenshot,
+        screenshot_url: screenshot.substring(0, 50) + '...', // Truncate for CSV readability
         screenshot_filename: `${element.id}_screenshot.png`
       };
     });

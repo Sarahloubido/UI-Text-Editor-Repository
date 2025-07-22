@@ -35,6 +35,17 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
       edited_text: '', // Empty for writers to fill
       frame_name: element.frameName,
       component_path: element.componentPath,
+      component_type: element.componentType || 'unknown',
+      screen_section: element.screenSection || 'unknown',
+      hierarchy: element.hierarchy || '',
+      priority: element.priority || 'medium',
+      is_interactive: element.isInteractive ? 'Yes' : 'No',
+      font_size: element.fontSize || '',
+      font_weight: element.fontWeight || '',
+      nearby_elements: element.nearbyElements?.join('; ') || '',
+      element_role: element.elementRole || '',
+      extraction_confidence: element.extractionMetadata?.confidence || '',
+      extraction_source: element.extractionMetadata?.source || '',
       context_notes: element.contextNotes || '',
       image: element.image || ''
     }));

@@ -287,6 +287,32 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     }
   };
 
+  // Simple test function to debug CSV generation
+  const testCSVGeneration = () => {
+    console.log('=== Testing CSV Generation ===');
+    try {
+      // Select all elements for testing
+      const allElementIds = new Set(prototype.textElements.map(el => el.id));
+      setSelectedElements(allElementIds);
+      
+      setTimeout(() => {
+        console.log('Selected elements after setting:', selectedElements.size);
+        const testCSV = generateCSV();
+        console.log('Test CSV generated:', testCSV ? 'SUCCESS' : 'FAILED');
+        console.log('CSV length:', testCSV.length);
+        if (testCSV) {
+          const lines = testCSV.split('\n');
+          console.log('CSV has', lines.length, 'lines');
+          console.log('Header:', lines[0]);
+          if (lines[1]) console.log('First row:', lines[1]);
+        }
+      }, 100);
+      
+    } catch (error) {
+      console.error('Test failed:', error);
+    }
+  };
+
   const toggleElementSelection = (elementId: string) => {
     const newSelection = new Set(selectedElements);
     if (newSelection.has(elementId)) {

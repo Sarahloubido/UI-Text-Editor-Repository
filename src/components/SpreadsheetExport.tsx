@@ -178,57 +178,122 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     console.log('Prototype name:', prototype.name);
     
     try {
+      // First, ensure we have selected elements
+      if (selectedElements.size === 0) {
+        console.log('No elements selected, selecting all elements...');
+        const allElementIds = new Set(prototype.textElements.map(el => el.id));
+        setSelectedElements(allElementIds);
+        
+        // Give React time to update state and try again
+        setTimeout(() => {
+          handleExport();
+        }, 100);
+        return;
+      }
+      
       const csvContent = generateCSV();
       console.log('CSV content generated, length:', csvContent.length);
       console.log('CSV preview (first 200 chars):', csvContent.substring(0, 200));
       
       if (!csvContent || csvContent.trim() === '') {
         console.error('Empty CSV content generated');
-        alert('No data to export. Please ensure text elements are selected.');
+        alert('No data to export. The prototype may not have any text elements.');
         return;
       }
       
-      // Test blob creation
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      console.log('Blob created, size:', blob.size, 'type:', blob.type);
+      // Try multiple download methods for better browser compatibility
       
-      // Test URL creation
-      const url = URL.createObjectURL(blob);
-      console.log('Object URL created:', url.substring(0, 50) + '...');
+      // Method 1: Standard blob download
+      try {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        console.log('Blob created, size:', blob.size, 'type:', blob.type);
+        
+        // Check if browser supports createObjectURL
+        if (window.URL && window.URL.createObjectURL) {
+          const url = URL.createObjectURL(blob);
+          console.log('Object URL created:', url.substring(0, 50) + '...');
+          
+          const link = document.createElement('a');
+          const filename = `${prototype.name.replace(/[^a-zA-Z0-9\s]/g, '_')}_text_elements.csv`;
+          console.log('Download filename:', filename);
+          
+          link.href = url;
+          link.download = filename;
+          link.style.display = 'none';
+          
+          document.body.appendChild(link);
+          console.log('Link added to DOM, triggering click...');
+          
+          link.click();
+          console.log('Link clicked');
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            console.log('Cleanup completed');
+          }, 100);
+          
+          alert('CSV download should have started! Check your downloads folder.');
+          onExportComplete();
+          return;
+        }
+      } catch (blobError) {
+        console.error('Blob download method failed:', blobError);
+      }
       
-      // Create and configure download link
-      const link = document.createElement('a');
-      const filename = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv`;
-      console.log('Download filename:', filename);
-      
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      
-      // Add to DOM and trigger download
-      document.body.appendChild(link);
-      console.log('Link added to DOM, triggering click...');
-      
-      // Use a timeout to ensure the link is properly added
-      setTimeout(() => {
+      // Method 2: Data URI fallback
+      try {
+        console.log('Trying data URI method...');
+        const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+        const link = document.createElement('a');
+        const filename = `${prototype.name.replace(/[^a-zA-Z0-9\s]/g, '_')}_text_elements.csv`;
+        
+        link.href = dataUri;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
         link.click();
-        console.log('Link clicked, removing from DOM...');
         document.body.removeChild(link);
         
-        // Clean up URL
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          console.log('Object URL revoked');
-        }, 1000);
-        
-        alert('CSV download initiated successfully!');
+        console.log('Data URI download triggered');
+        alert('CSV download initiated using fallback method!');
         onExportComplete();
-      }, 10);
+        return;
+      } catch (dataUriError) {
+        console.error('Data URI download method failed:', dataUriError);
+      }
+      
+      // Method 3: Copy to clipboard as last resort
+      try {
+        console.log('Trying clipboard method...');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(csvContent).then(() => {
+            alert('Download failed, but CSV data has been copied to your clipboard. You can paste it into a text editor and save as .csv');
+            onExportComplete();
+          });
+          return;
+        }
+      } catch (clipboardError) {
+        console.error('Clipboard method failed:', clipboardError);
+      }
+      
+      // If all methods fail, show the data in a new window
+      console.log('All download methods failed, opening in new window...');
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write('<pre>' + csvContent + '</pre>');
+        newWindow.document.title = 'CSV Data - Copy and Save';
+        alert('Download failed. The CSV data is displayed in a new window. Please copy it and save as a .csv file.');
+      } else {
+        alert('Download failed and popup was blocked. Please check your browser settings and try again.');
+      }
       
     } catch (error) {
       console.error('Export error details:', error);
       console.error('Error stack:', error.stack);
-      alert(`Failed to export CSV: ${error.message}`);
+      alert(`Failed to export CSV: ${error.message}. Please try refreshing the page and trying again.`);
     }
   };
 
@@ -372,26 +437,23 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleExport}
-                disabled={selectedElements.size === 0}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Export CSV ({selectedElements.size})
+                Export CSV ({selectedElements.size || 'All'})
               </button>
               
               <button
                 onClick={handleScreenshotsDownload}
-                disabled={selectedElements.size === 0}
-                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 <Image className="w-4 h-4 mr-2" />
-                Screenshots ({selectedElements.size})
+                Screenshots ({selectedElements.size || 'All'})
               </button>
               
               <button
                 onClick={handleExportWithScreenshots}
-                disabled={selectedElements.size === 0}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
               >
                 <Archive className="w-4 h-4 mr-2" />
                 CSV + Screenshots

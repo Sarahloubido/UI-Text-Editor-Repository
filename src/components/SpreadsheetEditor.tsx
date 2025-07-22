@@ -82,6 +82,17 @@ export const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
       edited_text: element.editedText || '',
       frame_name: element.frameName,
       component_path: element.componentPath,
+      component_type: element.componentType || 'unknown',
+      screen_section: element.screenSection || 'unknown',
+      hierarchy: element.hierarchy || '',
+      priority: element.priority || 'medium',
+      is_interactive: element.isInteractive ? 'Yes' : 'No',
+      font_size: element.fontSize || '',
+      font_weight: element.fontWeight || '',
+      nearby_elements: element.nearbyElements?.join('; ') || '',
+      element_role: element.elementRole || '',
+      extraction_confidence: element.extractionMetadata?.confidence || '',
+      extraction_source: element.extractionMetadata?.source || '',
       context_notes: element.contextNotes || '',
       image: element.image || ''
     }));
@@ -239,11 +250,75 @@ export const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({
                       </div>
                     </td>
                     <td className="px-4 py-4">
-                      <div className="max-w-xs">
-                        <p className="text-sm text-slate-600 mb-1">{element.frameName}</p>
+                      <div className="max-w-xs space-y-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-slate-600">{element.frameName}</p>
+                          {element.componentType && (
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                              element.componentType === 'button' ? 'bg-blue-100 text-blue-700' :
+                              element.componentType === 'heading' ? 'bg-purple-100 text-purple-700' :
+                              element.componentType === 'navigation' ? 'bg-green-100 text-green-700' :
+                              element.componentType === 'form' ? 'bg-orange-100 text-orange-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {element.componentType}
+                            </span>
+                          )}
+                          {element.priority && (
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${
+                              element.priority === 'high' ? 'bg-red-100 text-red-700' :
+                              element.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {element.priority}
+                            </span>
+                          )}
+                        </div>
+                        
                         <p className="text-xs text-slate-500 font-mono truncate">{element.componentPath}</p>
+                        
+                        {element.hierarchy && (
+                          <p className="text-xs text-slate-400 truncate" title={element.hierarchy}>
+                            📍 {element.hierarchy}
+                          </p>
+                        )}
+                        
+                        {element.screenSection && (
+                          <p className="text-xs text-slate-500">
+                            📱 {element.screenSection} 
+                            {element.isInteractive && (
+                              <span className="text-blue-600 ml-1">⚡ interactive</span>
+                            )}
+                          </p>
+                        )}
+                        
+                        {element.nearbyElements && element.nearbyElements.length > 0 && (
+                          <p className="text-xs text-slate-400 truncate" title={element.nearbyElements.join(', ')}>
+                            👥 Near: {element.nearbyElements.slice(0, 2).join(', ')}
+                            {element.nearbyElements.length > 2 && '...'}
+                          </p>
+                        )}
+                        
+                        {element.fontSize && (
+                          <p className="text-xs text-slate-400">
+                            🎨 {element.fontSize}px
+                            {element.fontWeight && ` ${element.fontWeight}`}
+                          </p>
+                        )}
+                        
                         {element.contextNotes && (
                           <p className="text-xs text-slate-500 mt-1 italic">{element.contextNotes}</p>
+                        )}
+                        
+                        {element.extractionMetadata && (
+                          <p className="text-xs text-slate-400 flex items-center gap-1">
+                            📊 {element.extractionMetadata.source} 
+                            <span className={`inline-block w-2 h-2 rounded-full ${
+                              (element.extractionMetadata.confidence || 0) > 0.8 ? 'bg-green-400' :
+                              (element.extractionMetadata.confidence || 0) > 0.6 ? 'bg-yellow-400' :
+                              'bg-red-400'
+                            }`} title={`Confidence: ${((element.extractionMetadata.confidence || 0) * 100).toFixed(0)}%`}></span>
+                          </p>
                         )}
                       </div>
                     </td>

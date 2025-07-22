@@ -1,11 +1,12 @@
 import { TextElement } from '../types';
+import { prototypeAPIManager } from './apiIntegrations';
 
 export interface ExtractedData {
   textElements: TextElement[];
   screenshots: { [key: string]: string };
 }
 
-// Real text extraction utilities
+// Enhanced text extraction utilities with better context detection
 export class PrototypeTextExtractor {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -15,6 +16,280 @@ export class PrototypeTextExtractor {
     this.ctx = this.canvas.getContext('2d')!;
   }
 
+  // Enhanced component type detection
+  private detectComponentType(element: Element, text: string, context: string): TextElement['componentType'] {
+    const tagName = element.tagName?.toLowerCase();
+    const className = element.className?.toLowerCase() || '';
+    const role = element.getAttribute('role')?.toLowerCase();
+    const ariaLabel = element.getAttribute('aria-label')?.toLowerCase() || '';
+    const textLower = text.toLowerCase().trim();
+    const contextLower = context.toLowerCase();
+
+    // Check for interactive elements first
+    if (tagName === 'button' || role === 'button' || className.includes('btn') || className.includes('button')) {
+      return 'button';
+    }
+    
+    if (tagName === 'a' || role === 'link' || className.includes('link')) {
+      return 'link';
+    }
+
+    // Check for form elements
+    if (['input', 'textarea', 'select'].includes(tagName) || role === 'textbox') {
+      return 'form';
+    }
+
+    if (tagName === 'label' || element.getAttribute('for') || className.includes('label')) {
+      return 'label';
+    }
+
+    if (element.getAttribute('placeholder') === text) {
+      return 'placeholder';
+    }
+
+    // Check for headings
+    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName) || 
+        className.includes('heading') || className.includes('title') ||
+        contextLower.includes('heading') || contextLower.includes('title')) {
+      return 'heading';
+    }
+
+    // Check for navigation
+    if (tagName === 'nav' || role === 'navigation' || 
+        className.includes('nav') || className.includes('menu') ||
+        contextLower.includes('navigation') || contextLower.includes('menu')) {
+      return 'navigation';
+    }
+
+    // Check for tooltips
+    if (role === 'tooltip' || className.includes('tooltip') || 
+        ariaLabel.includes('tooltip') || contextLower.includes('tooltip')) {
+      return 'tooltip';
+    }
+
+    // Content classification based on text patterns
+    if (textLower.match(/^(click|tap|submit|save|delete|cancel|confirm|next|previous|back)/)) {
+      return 'button';
+    }
+
+    if (textLower.length > 100) {
+      return 'content';
+    }
+
+    if (textLower.length < 3) {
+      return 'unknown';
+    }
+
+    return 'text';
+  }
+
+  // Enhanced hierarchy detection
+  private buildHierarchy(element: Element): string {
+    const hierarchy: string[] = [];
+    let current = element;
+    
+    while (current && current !== document.body) {
+      const tagName = current.tagName?.toLowerCase();
+      const className = current.className;
+      const id = current.id;
+      const role = current.getAttribute('role');
+      
+      let componentName = '';
+      
+      // Try to get meaningful component names
+      if (id) {
+        componentName = id.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      } else if (className) {
+        const meaningfulClass = className.split(' ')
+          .find(cls => !cls.match(/^(flex|grid|p-|m-|text-|bg-|w-|h-)/)) || className.split(' ')[0];
+        componentName = meaningfulClass.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      } else if (role) {
+        componentName = role.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      } else {
+        componentName = tagName.replace(/\b\w/g, l => l.toUpperCase());
+      }
+      
+      if (componentName && !hierarchy.includes(componentName)) {
+        hierarchy.unshift(componentName);
+      }
+      
+      current = current.parentElement!;
+    }
+    
+    return hierarchy.join(' > ') || 'Unknown';
+  }
+
+  // Enhanced screen section detection
+  private detectScreenSection(element: Element, boundingBox: { x: number; y: number; width: number; height: number }): TextElement['screenSection'] {
+    const tagName = element.tagName?.toLowerCase();
+    const className = element.className?.toLowerCase() || '';
+    const role = element.getAttribute('role')?.toLowerCase();
+    
+    // Check semantic elements first
+    if (tagName === 'header' || className.includes('header') || role === 'banner') {
+      return 'header';
+    }
+    
+    if (tagName === 'footer' || className.includes('footer') || role === 'contentinfo') {
+      return 'footer';
+    }
+    
+    if (tagName === 'nav' || className.includes('nav') || role === 'navigation') {
+      return 'navigation';
+    }
+    
+    if (tagName === 'aside' || className.includes('sidebar') || role === 'complementary') {
+      return 'sidebar';
+    }
+    
+    if (className.includes('modal') || className.includes('dialog') || role === 'dialog') {
+      return 'modal';
+    }
+    
+    if (className.includes('form') || tagName === 'form' || role === 'form') {
+      return 'form';
+    }
+    
+    // Position-based detection
+    const viewportHeight = window.innerHeight || 800;
+    const viewportWidth = window.innerWidth || 1200;
+    
+    if (boundingBox.y < viewportHeight * 0.15) {
+      return 'header';
+    }
+    
+    if (boundingBox.y > viewportHeight * 0.85) {
+      return 'footer';
+    }
+    
+    if (boundingBox.x < viewportWidth * 0.2 && boundingBox.width < viewportWidth * 0.3) {
+      return 'sidebar';
+    }
+    
+    return 'main';
+  }
+
+  // Enhanced priority detection
+  private calculatePriority(element: Element, text: string, boundingBox: { x: number; y: number; width: number; height: number }, componentType: string): TextElement['priority'] {
+    let score = 0;
+    
+    // Size-based scoring
+    const area = boundingBox.width * boundingBox.height;
+    if (area > 10000) score += 3;
+    else if (area > 5000) score += 2;
+    else if (area > 1000) score += 1;
+    
+    // Position-based scoring (top-left is higher priority)
+    const viewportHeight = window.innerHeight || 800;
+    const viewportWidth = window.innerWidth || 1200;
+    
+    if (boundingBox.y < viewportHeight * 0.3) score += 2;
+    if (boundingBox.x < viewportWidth * 0.5) score += 1;
+    
+    // Component type scoring
+    switch (componentType) {
+      case 'heading': score += 3; break;
+      case 'button': score += 2; break;
+      case 'navigation': score += 2; break;
+      case 'link': score += 1; break;
+      default: break;
+    }
+    
+    // Text content scoring
+    if (text.length < 10) score += 1; // Short, likely important text
+    if (text.match(/^(Home|Dashboard|Settings|Profile|Login|Signup)/i)) score += 2;
+    
+    // Element attributes scoring
+    const className = element.className?.toLowerCase() || '';
+    if (className.includes('primary') || className.includes('hero')) score += 2;
+    if (className.includes('cta') || className.includes('call-to-action')) score += 3;
+    
+    if (score >= 5) return 'high';
+    if (score >= 3) return 'medium';
+    return 'low';
+  }
+
+  // Enhanced nearby elements detection
+  private findNearbyElements(element: Element): string[] {
+    const nearby: string[] = [];
+    const siblings = Array.from(element.parentElement?.children || []);
+    
+    siblings.forEach(sibling => {
+      if (sibling !== element && sibling.textContent?.trim()) {
+        const text = sibling.textContent.trim();
+        if (text.length > 0 && text.length < 100) {
+          nearby.push(text);
+        }
+      }
+    });
+    
+    return nearby.slice(0, 5); // Limit to 5 nearby elements
+  }
+
+  // Extract font size from element
+  private extractFontSize(element: Element): number | undefined {
+    const style = element.getAttribute('style');
+    if (style) {
+      const fontSizeMatch = style.match(/font-size:\s*(\d+)px/);
+      if (fontSizeMatch) {
+        return parseInt(fontSizeMatch[1]);
+      }
+    }
+    
+    // Check for common CSS classes that indicate font size
+    const className = element.className?.toLowerCase() || '';
+    if (className.includes('text-xs')) return 12;
+    if (className.includes('text-sm')) return 14;
+    if (className.includes('text-base')) return 16;
+    if (className.includes('text-lg')) return 18;
+    if (className.includes('text-xl')) return 20;
+    if (className.includes('text-2xl')) return 24;
+    if (className.includes('text-3xl')) return 30;
+    
+    return undefined;
+  }
+
+  // Generate frame screenshot based on component type
+  private generateFrameScreenshot(frameName: string, componentType: string): string {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    
+    canvas.width = 800;
+    canvas.height = 600;
+    
+    // Draw frame background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw frame border
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw frame title
+    ctx.fillStyle = '#1e293b';
+    ctx.font = 'bold 16px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(frameName, 20, 30);
+    
+    // Draw component type indicator
+    ctx.fillStyle = componentType === 'button' ? '#3b82f6' :
+                   componentType === 'heading' ? '#8b5cf6' :
+                   componentType === 'navigation' ? '#10b981' :
+                   '#6b7280';
+    ctx.fillRect(20, 40, 100, 4);
+    
+    // Draw mock UI elements based on component type
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(20, 60, canvas.width - 40, 400);
+    
+    ctx.fillStyle = '#64748b';
+    ctx.font = '14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(`${frameName} - ${componentType} elements extracted`, 40, 100);
+    
+    return canvas.toDataURL();
+  }
+
+  // Real text extraction utilities
   async extractFromFile(file: File): Promise<ExtractedData> {
     const fileType = file.type;
     const fileName = file.name.toLowerCase();
@@ -53,6 +328,23 @@ export class PrototypeTextExtractor {
     try {
       console.log('Processing URL:', url);
       
+      // Use enhanced API manager for better extraction
+      const textElements = await prototypeAPIManager.extractFromURL(url);
+      
+      if (textElements.length > 0) {
+        const screenshots: { [key: string]: string } = {};
+        
+        // Generate screenshots for each text element
+        textElements.forEach((element, index) => {
+          if (element.frameName && !screenshots[element.frameName]) {
+            screenshots[element.frameName] = this.generateFrameScreenshot(element.frameName, element.componentType);
+          }
+        });
+        
+        return { textElements, screenshots };
+      }
+      
+      // Fallback to original method if API extraction fails
       if (url.includes('figma.com')) {
         return this.extractFromFigmaURL(url);
       } else if (url.includes('cursor.')) {
@@ -60,7 +352,6 @@ export class PrototypeTextExtractor {
       } else if (url.includes('bolt.new')) {
         return this.extractFromBoltURL(url);
       } else {
-        // Try to load as a web page
         return this.extractFromWebURL(url);
       }
     } catch (error) {
@@ -417,6 +708,19 @@ export class PrototypeTextExtractor {
         const componentPath = this.getDetailedComponentPath(element);
         const screenshot = await this.captureElementScreenshot(element, doc);
         
+        // Enhanced context detection
+        const componentType = this.detectComponentType(element, directText.trim(), componentPath);
+        const hierarchy = this.buildHierarchy(element);
+        const screenSection = this.detectScreenSection(element, rect);
+        const priority = this.calculatePriority(element, directText.trim(), rect, componentType);
+        const nearbyElements = this.findNearbyElements(element);
+        
+        // Determine if element is interactive
+        const isInteractive = ['button', 'a', 'input', 'select', 'textarea'].includes(element.tagName.toLowerCase()) ||
+                             element.getAttribute('role') === 'button' ||
+                             element.hasAttribute('onclick') ||
+                             element.getAttribute('style')?.includes('cursor: pointer');
+        
         textElements.push({
           id: `dom_${elementIndex++}`,
           originalText: directText.trim(),
@@ -424,7 +728,25 @@ export class PrototypeTextExtractor {
           componentPath,
           boundingBox: rect,
           contextNotes: this.generateContextNotes(element),
-          image: screenshot
+          image: screenshot,
+          componentType,
+          hierarchy,
+          parentComponent: element.parentElement?.tagName.toLowerCase(),
+          nearbyElements,
+          elementRole: element.getAttribute('role') || undefined,
+          fontSize: this.extractFontSize(element),
+          fontWeight: element.style.fontWeight || undefined,
+          color: element.style.color || undefined,
+          backgroundColor: element.style.backgroundColor || undefined,
+          isInteractive,
+          screenSection,
+          priority,
+          extractionMetadata: {
+            source: 'html',
+            confidence: 0.9,
+            extractedAt: new Date(),
+            extractionMethod: 'DOM Element Processing'
+          }
         });
       }
       
@@ -433,15 +755,38 @@ export class PrototypeTextExtractor {
       for (const attrText of attributeTexts) {
         if (attrText.text.trim().length > 0) {
           const screenshot = await this.captureElementScreenshot(element, doc);
+          const rect = this.simulateElementBounds(element);
+          
+          // Enhanced context for attribute text
+          const componentType = attrText.attribute === 'placeholder' ? 'placeholder' : 
+                               attrText.attribute === 'aria-label' ? 'label' : 'text';
+          const hierarchy = this.buildHierarchy(element);
+          const screenSection = this.detectScreenSection(element, rect);
+          const priority = this.calculatePriority(element, attrText.text.trim(), rect, componentType);
           
           textElements.push({
             id: `attr_${elementIndex++}`,
             originalText: attrText.text.trim(),
             frameName: this.getFrameName(doc, element),
             componentPath: `${this.getDetailedComponentPath(element)}@${attrText.attribute}`,
-            boundingBox: this.simulateElementBounds(element),
+            boundingBox: rect,
             contextNotes: `Attribute: ${attrText.attribute}`,
-            image: screenshot
+            image: screenshot,
+            componentType,
+            hierarchy,
+            parentComponent: element.parentElement?.tagName.toLowerCase(),
+            nearbyElements: this.findNearbyElements(element),
+            elementRole: element.getAttribute('role') || undefined,
+            fontSize: this.extractFontSize(element),
+            isInteractive: ['placeholder', 'aria-label'].includes(attrText.attribute),
+            screenSection,
+            priority,
+            extractionMetadata: {
+              source: 'html',
+              confidence: 0.8,
+              extractedAt: new Date(),
+              extractionMethod: 'Attribute Extraction'
+            }
           });
         }
       }
@@ -1126,21 +1471,127 @@ export class PrototypeTextExtractor {
 
   private generateRealisticFigmaTextElements(): TextElement[] {
     const figmaTexts = [
-      { text: 'Users will gain the selected roles in apps they already have access to. This won\'t affect apps they don\'t currently have. 4 users don\'t currently have access', frame: 'Role Assignment Dialog', path: 'Modal/Content/Description' },
-      { text: 'Dashboard', frame: 'Main Dashboard', path: 'Header/Navigation/Title' },
-      { text: 'Create New Project', frame: 'Main Dashboard', path: 'Content/Actions/Button' },
-      { text: 'Recent Projects', frame: 'Main Dashboard', path: 'Content/Section/Heading' },
-      { text: 'Project Alpha', frame: 'Main Dashboard', path: 'Content/ProjectList/Item/Title' },
-      { text: 'Last edited 2 hours ago', frame: 'Main Dashboard', path: 'Content/ProjectList/Item/Subtitle' },
-      { text: 'Settings', frame: 'Settings Page', path: 'Header/Navigation/Link' },
-      { text: 'Profile Information', frame: 'Settings Page', path: 'Content/Section/Heading' },
-      { text: 'Save Changes', frame: 'Settings Page', path: 'Content/Form/Button' },
-      { text: 'Welcome back!', frame: 'Login Page', path: 'Content/Hero/Heading' },
-      { text: 'Sign in to continue', frame: 'Login Page', path: 'Content/Hero/Subtitle' },
-      { text: 'Email address', frame: 'Login Page', path: 'Content/Form/Label' },
-      { text: 'Password', frame: 'Login Page', path: 'Content/Form/Label' },
-      { text: 'Remember me', frame: 'Login Page', path: 'Content/Form/Checkbox' },
-      { text: 'Forgot password?', frame: 'Login Page', path: 'Content/Form/Link' }
+      { 
+        text: 'Users will gain the selected roles in apps they already have access to. This won\'t affect apps they don\'t currently have. 4 users don\'t currently have access', 
+        frame: 'Role Assignment Dialog', 
+        path: 'Modal/Content/Description',
+        componentType: 'content' as const,
+        screenSection: 'modal' as const,
+        priority: 'high' as const,
+        fontSize: 14,
+        isInteractive: false,
+        nearbyElements: ['Assign Roles', 'Cancel', 'Confirm']
+      },
+      { 
+        text: 'Dashboard', 
+        frame: 'Main Dashboard', 
+        path: 'Header/Navigation/Title',
+        componentType: 'heading' as const,
+        screenSection: 'header' as const,
+        priority: 'high' as const,
+        fontSize: 24,
+        isInteractive: false,
+        nearbyElements: ['Home', 'Projects', 'Settings']
+      },
+      { 
+        text: 'Create New Project', 
+        frame: 'Main Dashboard', 
+        path: 'Content/Actions/Button',
+        componentType: 'button' as const,
+        screenSection: 'main' as const,
+        priority: 'high' as const,
+        fontSize: 16,
+        isInteractive: true,
+        nearbyElements: ['Import Project', 'Templates']
+      },
+      { 
+        text: 'Recent Projects', 
+        frame: 'Main Dashboard', 
+        path: 'Content/Section/Heading',
+        componentType: 'heading' as const,
+        screenSection: 'main' as const,
+        priority: 'medium' as const,
+        fontSize: 20,
+        isInteractive: false,
+        nearbyElements: ['View All', 'Sort by Date']
+      },
+      { 
+        text: 'Project Alpha', 
+        frame: 'Main Dashboard', 
+        path: 'Content/ProjectList/Item/Title',
+        componentType: 'link' as const,
+        screenSection: 'main' as const,
+        priority: 'medium' as const,
+        fontSize: 16,
+        isInteractive: true,
+        nearbyElements: ['Last edited 2 hours ago', 'Open', 'Delete']
+      },
+      { 
+        text: 'Last edited 2 hours ago', 
+        frame: 'Main Dashboard', 
+        path: 'Content/ProjectList/Item/Subtitle',
+        componentType: 'text' as const,
+        screenSection: 'main' as const,
+        priority: 'low' as const,
+        fontSize: 12,
+        isInteractive: false,
+        nearbyElements: ['Project Alpha', 'Open', 'Delete']
+      },
+      { 
+        text: 'Settings', 
+        frame: 'Settings Page', 
+        path: 'Header/Navigation/Link',
+        componentType: 'navigation' as const,
+        screenSection: 'header' as const,
+        priority: 'medium' as const,
+        fontSize: 16,
+        isInteractive: true,
+        nearbyElements: ['Dashboard', 'Profile', 'Logout']
+      },
+      { 
+        text: 'Welcome back!', 
+        frame: 'Login Page', 
+        path: 'Content/Hero/Heading',
+        componentType: 'heading' as const,
+        screenSection: 'main' as const,
+        priority: 'high' as const,
+        fontSize: 32,
+        isInteractive: false,
+        nearbyElements: ['Sign in to continue', 'Email address']
+      },
+      { 
+        text: 'Sign in to continue', 
+        frame: 'Login Page', 
+        path: 'Content/Hero/Subtitle',
+        componentType: 'text' as const,
+        screenSection: 'main' as const,
+        priority: 'medium' as const,
+        fontSize: 16,
+        isInteractive: false,
+        nearbyElements: ['Welcome back!', 'Email address', 'Password']
+      },
+      { 
+        text: 'Email address', 
+        frame: 'Login Page', 
+        path: 'Content/Form/Label',
+        componentType: 'label' as const,
+        screenSection: 'form' as const,
+        priority: 'medium' as const,
+        fontSize: 14,
+        isInteractive: false,
+        nearbyElements: ['Password', 'Remember me']
+      },
+      { 
+        text: 'Sign In', 
+        frame: 'Login Page', 
+        path: 'Content/Form/Button',
+        componentType: 'button' as const,
+        screenSection: 'form' as const,
+        priority: 'high' as const,
+        fontSize: 16,
+        isInteractive: true,
+        nearbyElements: ['Forgot password?', 'Create account']
+      }
     ];
 
     return figmaTexts.map((item, index) => ({
@@ -1154,8 +1605,24 @@ export class PrototypeTextExtractor {
         width: Math.min(400, item.text.length * 8 + 20),
         height: item.text.length > 50 ? 60 : 32
       },
-      contextNotes: 'Extracted from Figma design',
-      image: this.generateFigmaElementScreenshot(item.text, index)
+      contextNotes: `Extracted from Figma design - ${item.componentType} in ${item.screenSection}`,
+      image: this.generateFigmaElementScreenshot(item.text, index),
+      componentType: item.componentType,
+      hierarchy: `Figma > ${item.frame} > ${item.path.replace(/\//g, ' > ')}`,
+      parentComponent: item.path.split('/').slice(-2, -1)[0]?.toLowerCase(),
+      nearbyElements: item.nearbyElements,
+      elementRole: item.componentType === 'button' ? 'button' : undefined,
+      fontSize: item.fontSize,
+      fontWeight: item.componentType === 'heading' ? 'bold' : undefined,
+      isInteractive: item.isInteractive,
+      screenSection: item.screenSection,
+      priority: item.priority,
+      extractionMetadata: {
+        source: 'api',
+        confidence: 0.95,
+        extractedAt: new Date(),
+        extractionMethod: 'Figma API Simulation'
+      }
     }));
   }
 

@@ -25,14 +25,21 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
   );
 
   const generateCSV = () => {
+    console.log('=== CSV Generation Debug ===');
+    console.log('prototype.textElements:', prototype.textElements);
+    console.log('selectedElements Set:', selectedElements);
+    
     const selectedTextElements = prototype.textElements.filter(el => 
       selectedElements.has(el.id)
     );
     
+    console.log('Filtered selected elements:', selectedTextElements);
     console.log('Generating CSV for', selectedTextElements.length, 'elements');
     
     if (selectedTextElements.length === 0) {
       console.warn('No elements selected for CSV generation');
+      console.log('Available element IDs:', prototype.textElements.map(el => el.id));
+      console.log('Selected IDs:', Array.from(selectedElements));
       return '';
     }
     
@@ -76,11 +83,22 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
 
   // Generate a screenshot for elements that don't have one
   const generateElementScreenshot = (element: TextElement, index: number): string => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    
-    canvas.width = Math.max(300, element.boundingBox.width + 40);
-    canvas.height = Math.max(150, element.boundingBox.height + 80);
+    try {
+      console.log(`Generating screenshot for element ${element.id}:`, element);
+      
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        console.error('Could not get canvas context');
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='; // 1x1 transparent pixel
+      }
+      
+      const width = Math.max(300, (element.boundingBox?.width || 200) + 40);
+      const height = Math.max(150, (element.boundingBox?.height || 50) + 80);
+      
+      canvas.width = width;
+      canvas.height = height;
     
     // Background
     ctx.fillStyle = '#ffffff';
@@ -135,44 +153,82 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     }
     ctx.fillText(line, 10, y);
     
-    // Priority indicator
-    if (element.priority) {
-      const priorityColor = element.priority === 'high' ? '#ef4444' :
-                           element.priority === 'medium' ? '#f59e0b' : '#6b7280';
-      ctx.fillStyle = priorityColor;
-      ctx.fillRect(canvas.width - 30, 10, 20, 6);
+      // Priority indicator
+      if (element.priority) {
+        const priorityColor = element.priority === 'high' ? '#ef4444' :
+                             element.priority === 'medium' ? '#f59e0b' : '#6b7280';
+        ctx.fillStyle = priorityColor;
+        ctx.fillRect(canvas.width - 30, 10, 20, 6);
+      }
+      
+      const dataUrl = canvas.toDataURL('image/png');
+      console.log(`Screenshot generated for ${element.id}, length: ${dataUrl.length}`);
+      return dataUrl;
+      
+    } catch (error) {
+      console.error(`Error generating screenshot for element ${element.id}:`, error);
+      return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='; // 1x1 transparent pixel fallback
     }
-    
-    return canvas.toDataURL('image/png');
   };
 
   const handleExport = () => {
+    console.log('=== CSV Export Debug Info ===');
+    console.log('Selected elements count:', selectedElements.size);
+    console.log('Total elements count:', prototype.textElements.length);
+    console.log('Prototype name:', prototype.name);
+    
     try {
       const csvContent = generateCSV();
+      console.log('CSV content generated, length:', csvContent.length);
+      console.log('CSV preview (first 200 chars):', csvContent.substring(0, 200));
       
       if (!csvContent || csvContent.trim() === '') {
+        console.error('Empty CSV content generated');
         alert('No data to export. Please ensure text elements are selected.');
         return;
       }
       
+      // Test blob creation
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
+      console.log('Blob created, size:', blob.size, 'type:', blob.type);
+      
+      // Test URL creation
       const url = URL.createObjectURL(blob);
+      console.log('Object URL created:', url.substring(0, 50) + '...');
+      
+      // Create and configure download link
+      const link = document.createElement('a');
+      const filename = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv`;
+      console.log('Download filename:', filename);
       
       link.setAttribute('href', url);
-      link.setAttribute('download', `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv`);
+      link.setAttribute('download', filename);
       link.style.visibility = 'hidden';
+      
+      // Add to DOM and trigger download
       document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      console.log('Link added to DOM, triggering click...');
       
-      // Clean up
-      setTimeout(() => URL.revokeObjectURL(url), 100);
+      // Use a timeout to ensure the link is properly added
+      setTimeout(() => {
+        link.click();
+        console.log('Link clicked, removing from DOM...');
+        document.body.removeChild(link);
+        
+        // Clean up URL
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+          console.log('Object URL revoked');
+        }, 1000);
+        
+        alert('CSV download initiated successfully!');
+        onExportComplete();
+      }, 10);
       
-      onExportComplete();
     } catch (error) {
-      console.error('Export error:', error);
-      alert('Failed to export CSV. Please try again.');
+      console.error('Export error details:', error);
+      console.error('Error stack:', error.stack);
+      alert(`Failed to export CSV: ${error.message}`);
     }
   };
 

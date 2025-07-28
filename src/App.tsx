@@ -5,10 +5,11 @@ import { PrototypeImport } from './components/PrototypeImport';
 import { SpreadsheetExport } from './components/SpreadsheetExport';
 import { SpreadsheetEditor } from './components/SpreadsheetEditor';
 import { DiffViewer } from './components/DiffViewer';
-import { DebugTest } from './components/DebugTest';
+
 import { ProductionStatus } from './components/ProductionStatus';
 import { Prototype, WorkflowStep, TextElement, DiffItem } from './types';
-import { CheckCircle, Rocket } from 'lucide-react';
+import { CheckCircle, Rocket, Download, FileText } from 'lucide-react';
+import { PrototypeGenerator } from './utils/prototypeGenerator';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -17,7 +18,12 @@ function App() {
   const [editedElements, setEditedElements] = useState<TextElement[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishComplete, setPublishComplete] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
+
+  const [generatedFiles, setGeneratedFiles] = useState<{
+    htmlContent: string;
+    figmaContent: string;
+    updatedPrototype: Prototype;
+  } | null>(null);
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -42,20 +48,56 @@ function App() {
   };
 
   const handleApplyChanges = async (changes: DiffItem[]) => {
+    if (!prototype) return;
+    
     setIsPublishing(true);
     
-    // Simulate API call to update prototype
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    completeStep('reimport');
-    completeStep('publish');
-    setIsPublishing(false);
-    setPublishComplete(true);
-    setCurrentStep('publish');
+    try {
+      // Generate updated prototype with changes applied
+      const generated = PrototypeGenerator.generateUpdatedPrototype(prototype, changes);
+      setGeneratedFiles(generated);
+      
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      completeStep('reimport');
+      completeStep('publish');
+      setIsPublishing(false);
+      setPublishComplete(true);
+      setCurrentStep('publish');
+    } catch (error) {
+      console.error('Error generating prototype:', error);
+      setIsPublishing(false);
+      alert('Error generating updated prototype. Please try again.');
+    }
   };
 
   const handleStepChange = (step: WorkflowStep) => {
     setCurrentStep(step);
+  };
+
+  const handleDownloadHTML = () => {
+    if (generatedFiles) {
+      const filename = `${prototype?.name.replace(/[^a-zA-Z0-9]/g, '_')}_updated.html`;
+      PrototypeGenerator.downloadFile(generatedFiles.htmlContent, filename, 'text/html');
+    }
+  };
+
+  const handleDownloadFigma = () => {
+    if (generatedFiles) {
+      const filename = `${prototype?.name.replace(/[^a-zA-Z0-9]/g, '_')}_updated.json`;
+      PrototypeGenerator.downloadFile(generatedFiles.figmaContent, filename, 'application/json');
+    }
+  };
+
+  const handleViewPrototype = () => {
+    if (generatedFiles) {
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(generatedFiles.htmlContent);
+        newWindow.document.close();
+      }
+    }
   };
 
   const getStepNumber = (step: WorkflowStep): number => {
@@ -133,7 +175,40 @@ function App() {
               </div>
             </div>
 
-            <div className="flex justify-center space-x-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-6 mb-8">
+              <h3 className="text-xl font-semibold text-slate-900 mb-4">Download Your Updated Prototype</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <button
+                  onClick={handleViewPrototype}
+                  className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Rocket className="w-4 h-4 mr-2" />
+                  View Prototype
+                </button>
+                
+                <button
+                  onClick={handleDownloadHTML}
+                  className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download HTML
+                </button>
+                
+                <button
+                  onClick={handleDownloadFigma}
+                  className="inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download JSON
+                </button>
+              </div>
+              <p className="text-sm text-slate-600 mt-4">
+                <strong>HTML:</strong> Interactive prototype you can open in any browser<br />
+                <strong>JSON:</strong> Structured data compatible with design tools
+              </p>
+            </div>
+
+            <div className="flex justify-center">
               <button
                 onClick={() => {
                   setPublishComplete(false);
@@ -141,15 +216,11 @@ function App() {
                   setCurrentStep('import');
                   setPrototype(null);
                   setEditedElements([]);
+                  setGeneratedFiles(null);
                 }}
                 className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
               >
                 Start New Project
-              </button>
-              
-              <button className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Rocket className="w-4 h-4 mr-2" />
-                View Updated Prototype
               </button>
             </div>
           </div>
@@ -162,19 +233,10 @@ function App() {
     <div className="min-h-screen bg-slate-50">
       <Header currentStep={getStepNumber(currentStep).toString()} totalSteps={5} />
       
-      {/* Production Status & Debug */}
+      {/* Production Status */}
       <div className="max-w-4xl mx-auto px-8 pt-4">
         <ProductionStatus />
-        
-        <button
-          onClick={() => setShowDebug(!showDebug)}
-          className="mb-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-        >
-          {showDebug ? 'Hide Debug' : 'Show Debug Tests'}
-        </button>
       </div>
-      
-      {showDebug && <DebugTest />}
       
       <WorkflowNavigation 
         currentStep={currentStep} 

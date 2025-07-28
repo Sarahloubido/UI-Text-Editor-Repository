@@ -75,6 +75,7 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
         <html>
         <head>
           <title>CSV Export - ${prototype.name}</title>
+          <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
           <style>
             body { 
               font-family: Arial, sans-serif; 
@@ -132,32 +133,73 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
             </ol>
           </div>
           
-          <button class="download-btn" onclick="downloadCSV()">📥 Download CSV File</button>
-          <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+          <button class="download-btn" onclick="downloadCSV()" id="downloadBtn">📥 Download CSV File</button>
+          <button class="copy-btn" onclick="copyToClipboard()" id="copyBtn">📋 Copy to Clipboard</button>
+          
+          <div id="status" style="margin: 10px 0; padding: 10px; background: #e5f3ff; border-radius: 4px; display: none;">
+            <strong>Status:</strong> <span id="statusText"></span>
+          </div>
           
           <h3>CSV Content:</h3>
           <textarea id="csvContent" readonly>${csvContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
           
           <script>
+            function showStatus(message, isError = false) {
+              const status = document.getElementById('status');
+              const statusText = document.getElementById('statusText');
+              statusText.textContent = message;
+              status.style.display = 'block';
+              status.style.background = isError ? '#ffebee' : '#e5f3ff';
+            }
+            
             function downloadCSV() {
-              const content = document.getElementById('csvContent').value;
-              const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = '${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-              alert('Download started! Check your Downloads folder.');
+              try {
+                showStatus('Preparing download...');
+                const content = document.getElementById('csvContent').value;
+                console.log('CSV content length:', content.length);
+                
+                if (!content || content.length < 10) {
+                  showStatus('Error: No CSV content found', true);
+                  return;
+                }
+                
+                const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = '${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showStatus('Download started! Check your Downloads folder.');
+              } catch (error) {
+                console.error('Download error:', error);
+                showStatus('Download failed: ' + error.message, true);
+              }
             }
             
             function copyToClipboard() {
-              const textarea = document.getElementById('csvContent');
-              textarea.select();
-              document.execCommand('copy');
-              alert('CSV content copied to clipboard!\\n\\nPaste it into Excel, Google Sheets, or a text editor and save as .csv');
+              try {
+                showStatus('Copying to clipboard...');
+                const textarea = document.getElementById('csvContent');
+                textarea.select();
+                
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(textarea.value).then(() => {
+                    showStatus('CSV content copied to clipboard! Paste into Excel, Google Sheets, or a text editor and save as .csv');
+                  }).catch(() => {
+                    document.execCommand('copy');
+                    showStatus('CSV content copied to clipboard! Paste into Excel, Google Sheets, or a text editor and save as .csv');
+                  });
+                } else {
+                  document.execCommand('copy');
+                  showStatus('CSV content copied to clipboard! Paste into Excel, Google Sheets, or a text editor and save as .csv');
+                }
+              } catch (error) {
+                showStatus('Copy failed: ' + error.message, true);
+              }
             }
             
             // Auto-select content for easy copying

@@ -8,9 +8,10 @@ export class PrototypeAPIManager {
 
   constructor() {
     // In a real implementation, these would come from environment variables or user settings
-    this.figmaAccessToken = process.env.REACT_APP_FIGMA_ACCESS_TOKEN;
-    this.boltAPIKey = process.env.REACT_APP_BOLT_API_KEY;
-    this.cursorAPIKey = process.env.REACT_APP_CURSOR_API_KEY;
+    // For Vite, use import.meta.env instead of process.env
+    this.figmaAccessToken = import.meta.env.VITE_FIGMA_ACCESS_TOKEN;
+    this.boltAPIKey = import.meta.env.VITE_BOLT_API_KEY;
+    this.cursorAPIKey = import.meta.env.VITE_CURSOR_API_KEY;
   }
 
   // Figma API Integration
@@ -247,33 +248,33 @@ export class PrototypeAPIManager {
       }
     ];
 
-    return mockElements.map((item, index) => ({
-      id: `figma_api_${index}`,
-      originalText: item.text,
-      frameName: item.frame,
-      componentPath: item.path,
-      boundingBox: {
-        x: Math.random() * 400,
-        y: Math.random() * 600,
-        width: Math.min(400, item.text.length * 8 + 20),
-        height: item.text.length > 50 ? 60 : 32
-      },
-      contextNotes: `Real Figma API extraction - ${item.componentType} in ${item.screenSection}`,
-      componentType: item.componentType,
-      hierarchy: `Figma > ${item.frame} > ${item.path.replace(/\//g, ' > ')}`,
-      nearbyElements: ['Nearby Element 1', 'Nearby Element 2'],
-      fontSize: item.componentType === 'heading' ? 24 : 16,
-      fontWeight: item.componentType === 'heading' ? 'bold' : 'normal',
-      isInteractive: item.componentType === 'button' || item.componentType === 'link',
-      screenSection: item.screenSection,
-      priority: item.priority,
-      extractionMetadata: {
-        source: 'api',
-        confidence: 0.98,
-        extractedAt: new Date(),
-        extractionMethod: 'Figma API (Mock)'
-      }
-    }));
+          return mockElements.map((item, index) => ({
+        id: `figma_api_${index}`,
+        originalText: item.text,
+        frameName: item.frame,
+        componentPath: item.path,
+        boundingBox: {
+          x: Math.random() * 400,
+          y: Math.random() * 600,
+          width: Math.min(400, item.text.length * 8 + 20),
+          height: item.text.length > 50 ? 60 : 32
+        },
+        contextNotes: `Real Figma API extraction - ${item.componentType} in ${item.screenSection}`,
+        componentType: item.componentType,
+        hierarchy: `Figma > ${item.frame} > ${item.path.replace(/\//g, ' > ')}`,
+        nearbyElements: ['Nearby Element 1', 'Nearby Element 2'],
+        fontSize: item.componentType === 'heading' ? 24 : 16,
+        fontWeight: item.componentType === 'heading' ? 'bold' : 'normal',
+        isInteractive: item.componentType === 'button' || item.componentType === 'link',
+        screenSection: item.screenSection,
+        priority: item.priority,
+        extractionMetadata: {
+          source: 'api' as const,
+          confidence: 0.98,
+          extractedAt: new Date(),
+          extractionMethod: 'Figma API (Mock)'
+        }
+      }));
   }
 
   // Bolt.new API Integration
@@ -297,7 +298,7 @@ export class PrototypeAPIManager {
         screenSection: 'main',
         priority: 'high',
         extractionMetadata: {
-          source: 'api',
+          source: 'api' as const,
           confidence: 0.9,
           extractedAt: new Date(),
           extractionMethod: 'Bolt API'
@@ -327,7 +328,7 @@ export class PrototypeAPIManager {
         screenSection: 'header',
         priority: 'high',
         extractionMetadata: {
-          source: 'api',
+          source: 'api' as const,
           confidence: 0.85,
           extractedAt: new Date(),
           extractionMethod: 'Cursor API'
@@ -396,7 +397,7 @@ export class PrototypeAPIManager {
           screenSection: 'main',
           priority: 'medium',
           extractionMetadata: {
-            source: 'api',
+            source: 'api' as const,
             confidence: 0.7,
             extractedAt: new Date(),
             extractionMethod: 'Web Scraping'

@@ -8,8 +8,9 @@ import { DiffViewer } from './components/DiffViewer';
 
 import { ProductionStatus } from './components/ProductionStatus';
 import { Prototype, WorkflowStep, TextElement, DiffItem } from './types';
-import { CheckCircle, Rocket, Download, FileText } from 'lucide-react';
+import { CheckCircle, Rocket, Download, FileText, AlertCircle } from 'lucide-react';
 import { PrototypeGenerator } from './utils/prototypeGenerator';
+import { FigmaIntegration } from './utils/figmaIntegration';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -24,6 +25,7 @@ function App() {
     figmaContent: string;
     updatedPrototype: Prototype;
   } | null>(null);
+  const [figmaFileId, setFigmaFileId] = useState<string>('');
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -32,6 +34,15 @@ function App() {
   const handleImportComplete = (importedPrototype: Prototype) => {
     setPrototype(importedPrototype);
     setEditedElements(importedPrototype.textElements);
+    
+    // Extract Figma file ID if it's from a Figma URL
+    if (importedPrototype.source === 'figma' && importedPrototype.url) {
+      const fileId = FigmaIntegration.extractFileIdFromUrl(importedPrototype.url);
+      if (fileId) {
+        setFigmaFileId(fileId);
+      }
+    }
+    
     completeStep('import');
     setCurrentStep('export');
   };
@@ -98,6 +109,16 @@ function App() {
         newWindow.document.close();
       }
     }
+  };
+
+  const handleFigmaAuth = () => {
+    // Show information about the limitation
+    alert(
+      'Direct Figma file editing is not supported via the REST API.\n\n' +
+      'The Figma REST API is read-only. To programmatically edit Figma files, ' +
+      'you would need to create a Figma Plugin.\n\n' +
+      'You can still download the updated HTML/JSON files below.'
+    );
   };
 
   const getStepNumber = (step: WorkflowStep): number => {
@@ -175,8 +196,57 @@ function App() {
               </div>
             </div>
 
+            {/* Figma Integration Section */}
+            {figmaFileId && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-6 mb-6">
+                <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                  ⚠️ Figma File Editing (Limited)
+                </h3>
+
+
+                <div className="bg-white border border-amber-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-start space-x-2 mb-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-medium text-amber-900 mb-1">API Limitation</h4>
+                      <p className="text-amber-800 text-sm">
+                        The Figma REST API is read-only and cannot edit files directly. 
+                        To programmatically edit Figma files, you would need to create a Figma Plugin.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 text-sm text-slate-700">
+                    <h5 className="font-medium">Alternative workflows:</h5>
+                    <ul className="list-disc list-inside space-y-1 ml-4">
+                      <li>Download the updated HTML/JSON files below</li>
+                      <li>Import the JSON into design tools that support it</li>
+                      <li>Use the HTML file as a reference for manual updates</li>
+                      <li>Consider creating a Figma Plugin for automated updates</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleFigmaAuth}
+                  disabled={true}
+                  className="inline-flex items-center justify-center px-8 py-3 bg-slate-400 text-white rounded-lg cursor-not-allowed opacity-50 font-medium"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
+                    <circle cx="15.332" cy="12" r="3.332"/>
+                  </svg>
+                  Direct Figma Editing (Not Available)
+                </button>
+                <p className="text-sm text-slate-600 mt-3">
+                  Direct file editing is not supported by Figma's REST API. Use the download options below instead.
+                </p>
+              </div>
+            )}
+
+            {/* Local Download Options */}
             <div className="bg-white rounded-lg border border-slate-200 p-6 mb-8">
-              <h3 className="text-xl font-semibold text-slate-900 mb-4">Download Your Updated Prototype</h3>
+              <h3 className="text-xl font-semibold text-slate-900 mb-4">Download Local Files</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
                   onClick={handleViewPrototype}
@@ -217,6 +287,7 @@ function App() {
                   setPrototype(null);
                   setEditedElements([]);
                   setGeneratedFiles(null);
+                  setFigmaFileId('');
                 }}
                 className="px-6 py-3 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors"
               >

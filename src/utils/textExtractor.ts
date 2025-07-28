@@ -2010,7 +2010,18 @@ export class PrototypeTextExtractor {
           componentPath: 'Dialog/Content/Description',
           boundingBox: { x: 0, y: 0, width: 400, height: 60 },
           contextNotes: 'Fallback text element - role assignment description',
-          image: this.generateFallbackScreenshot('Users will gain the selected roles...')
+          image: this.generateFallbackScreenshot('Users will gain the selected roles...'),
+          componentType: 'content',
+          hierarchy: 'Dialog > Content > Description',
+          isInteractive: false,
+          screenSection: 'modal',
+          priority: 'high',
+          extractionMetadata: {
+            source: 'html',
+            confidence: 0.5,
+            extractedAt: new Date(),
+            extractionMethod: 'Fallback Data'
+          }
         },
         {
           id: 'fallback_2',
@@ -2019,7 +2030,18 @@ export class PrototypeTextExtractor {
           componentPath: 'Unknown/Component',
           boundingBox: { x: 0, y: 70, width: 150, height: 24 },
           contextNotes: 'Fallback text element',
-          image: this.generateFallbackScreenshot('Sample Text Element')
+          image: this.generateFallbackScreenshot('Sample Text Element'),
+          componentType: 'text',
+          hierarchy: 'Unknown > Component',
+          isInteractive: false,
+          screenSection: 'main',
+          priority: 'medium',
+          extractionMetadata: {
+            source: 'html',
+            confidence: 0.5,
+            extractedAt: new Date(),
+            extractionMethod: 'Fallback Data'
+          }
         }
       ],
       screenshots: {}

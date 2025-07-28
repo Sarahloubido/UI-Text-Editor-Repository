@@ -47,26 +47,7 @@ export const FigmaTextExtraction: React.FC<FigmaTextExtractionProps> = ({
     }
   };
 
-  // Method 2: API with token
-  const handleApiMethod = async () => {
-    const fileId = extractFileId(figmaUrl);
-    if (!fileId || !apiToken.trim()) {
-      alert('Please provide a valid Figma URL and API token.');
-      return;
-    }
-
-    setIsProcessing(true);
-    try {
-      const elements = await extractViaAPI(fileId, apiToken);
-      setExtractedCount(elements.length);
-      onTextExtracted(elements);
-    } catch (error) {
-      console.error('Error with API extraction:', error);
-      alert('Error accessing Figma API. Please check your token and try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  // API method removed - now handled by FigmaAuthModal
 
   // Parse text from copy-pasted Figma content
   const parseTextFromPaste = (content: string, url: string): TextElement[] => {
@@ -114,70 +95,9 @@ export const FigmaTextExtraction: React.FC<FigmaTextExtractionProps> = ({
     return elements;
   };
 
-  // Extract via Figma API
-  const extractViaAPI = async (fileId: string, token: string): Promise<TextElement[]> => {
-    const response = await fetch(`https://api.figma.com/v1/files/${fileId}`, {
-      headers: {
-        'X-Figma-Token': token
-      }
-    });
+  // API extraction removed - now handled by FigmaAuthModal
 
-    if (!response.ok) {
-      throw new Error(`Figma API error: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    return parseFigmaAPIData(data, figmaUrl);
-  };
-
-  // Parse Figma API response
-  const parseFigmaAPIData = (figmaData: any, url: string): TextElement[] => {
-    const textElements: TextElement[] = [];
-    let elementIndex = 0;
-
-    const traverseNode = (node: any, frameName: string = '', hierarchy: string[] = []) => {
-      if (node.type === 'TEXT' && node.characters) {
-        const bounds = node.absoluteBoundingBox || { x: 0, y: 0, width: 100, height: 20 };
-        const textStyle = node.style || {};
-        
-        textElements.push({
-          id: `api_${elementIndex++}`,
-          originalText: node.characters,
-          frameName: frameName || node.name || 'Figma Frame',
-          componentPath: [...hierarchy, node.name || 'Text'].join(' > '),
-          boundingBox: bounds,
-          contextNotes: `Real text from Figma API - ${node.name || 'Text Node'}`,
-          componentType: determineComponentType(node.characters, elementIndex),
-          hierarchy: [...hierarchy, node.name || 'Text'].join(' > '),
-          isInteractive: node.name?.toLowerCase().includes('button') || false,
-          screenSection: determineScreenSection(node.characters, elementIndex, 10),
-          priority: bounds.height > 30 ? 'high' : 'medium',
-          fontSize: textStyle.fontSize || 16,
-          fontFamily: textStyle.fontFamily || 'Inter',
-          fontWeight: textStyle.fontWeight?.toString() || '400',
-          extractionMetadata: {
-            source: 'api' as const,
-            confidence: 1.0,
-            extractedAt: new Date(),
-            extractionMethod: 'Figma API'
-          }
-        });
-      }
-
-      if (node.children) {
-        const currentFrameName = node.type === 'FRAME' ? node.name : frameName;
-        node.children.forEach((child: any) => {
-          traverseNode(child, currentFrameName, [...hierarchy, node.name || node.type]);
-        });
-      }
-    };
-
-    if (figmaData.document) {
-      traverseNode(figmaData.document);
-    }
-
-    return textElements;
-  };
+  // API parsing removed - now handled by FigmaAuthModal
 
   // Helper functions
   const determineComponentType = (text: string, index: number): TextElement['componentType'] => {

@@ -11,6 +11,8 @@ import { Prototype, WorkflowStep, TextElement, DiffItem } from './types';
 import { CheckCircle, Rocket, Download, FileText, AlertCircle } from 'lucide-react';
 import { PrototypeGenerator } from './utils/prototypeGenerator';
 import { FigmaIntegration } from './utils/figmaIntegration';
+import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
+import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -111,14 +113,43 @@ function App() {
     }
   };
 
-  const handleFigmaAuth = () => {
-    // Show information about the limitation
-    alert(
-      'Direct Figma file editing is not supported via the REST API.\n\n' +
-      'The Figma REST API is read-only. To programmatically edit Figma files, ' +
-      'you would need to create a Figma Plugin.\n\n' +
-      'You can still download the updated HTML/JSON files below.'
-    );
+  const handleGenerateFigmaPlugin = () => {
+    if (!generatedFiles || !figmaFileId) return;
+
+    // Get the changes that were applied
+    const changes = editedElements
+      .filter(el => el.editedText && el.editedText !== el.originalText)
+      .map(el => ({
+        id: el.id,
+        originalText: el.originalText,
+        editedText: el.editedText || '',
+        frameName: el.frameName,
+        componentPath: el.componentPath,
+        changeType: 'modified' as const
+      }));
+
+    if (changes.length === 0) {
+      alert('No text changes detected. Make some edits first!');
+      return;
+    }
+
+    // Download the plugin files
+    FigmaPluginGenerator.downloadPluginFiles(changes, figmaFileId);
+    
+    // Show instructions
+    setTimeout(() => {
+      alert(
+        '🎯 Figma Plugin Generated!\n\n' +
+        'You\'ll receive 3 files:\n' +
+        '• manifest.json\n' +
+        '• code.js\n' +
+        '• ui.html\n\n' +
+        'To install:\n' +
+        '1. In Figma: Plugins → Development → Import plugin from manifest...\n' +
+        '2. Select the manifest.json file\n' +
+        '3. Run the plugin to apply your text changes directly in Figma!'
+      );
+    }, 1500);
   };
 
   const getStepNumber = (step: WorkflowStep): number => {
@@ -196,51 +227,52 @@ function App() {
               </div>
             </div>
 
-            {/* Figma Integration Section */}
+            {/* Figma Plugin Generation Section */}
             {figmaFileId && (
-              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-6 mb-6">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6 mb-6">
                 <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                  ⚠️ Figma File Editing (Limited)
+                  🎯 Update Your Figma File Directly
                 </h3>
 
-
-                <div className="bg-white border border-amber-200 rounded-lg p-4 mb-4">
+                <div className="bg-white border border-blue-200 rounded-lg p-4 mb-4">
                   <div className="flex items-start space-x-2 mb-3">
-                    <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                     <div>
-                      <h4 className="font-medium text-amber-900 mb-1">API Limitation</h4>
-                      <p className="text-amber-800 text-sm">
-                        The Figma REST API is read-only and cannot edit files directly. 
-                        To programmatically edit Figma files, you would need to create a Figma Plugin.
+                      <h4 className="font-medium text-blue-900 mb-1">Custom Figma Plugin Solution</h4>
+                      <p className="text-blue-800 text-sm">
+                        Generate a custom Figma plugin that will apply your text changes directly inside Figma.
+                        This works by creating a plugin specifically for your changes.
                       </p>
                     </div>
                   </div>
                   
                   <div className="space-y-2 text-sm text-slate-700">
-                    <h5 className="font-medium">Alternative workflows:</h5>
+                    <h5 className="font-medium">How it works:</h5>
                     <ul className="list-disc list-inside space-y-1 ml-4">
-                      <li>Download the updated HTML/JSON files below</li>
-                      <li>Import the JSON into design tools that support it</li>
-                      <li>Use the HTML file as a reference for manual updates</li>
-                      <li>Consider creating a Figma Plugin for automated updates</li>
+                      <li>Downloads 3 plugin files (manifest.json, code.js, ui.html)</li>
+                      <li>Install the plugin in Figma via "Import plugin from manifest"</li>
+                      <li>Run the plugin to apply all your text changes at once</li>
+                      <li>See your changes directly in your Figma file!</li>
                     </ul>
                   </div>
                 </div>
 
                 <button
-                  onClick={handleFigmaAuth}
-                  disabled={true}
-                  className="inline-flex items-center justify-center px-8 py-3 bg-slate-400 text-white rounded-lg cursor-not-allowed opacity-50 font-medium"
+                  onClick={handleGenerateFigmaPlugin}
+                  disabled={!generatedFiles}
+                  className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
                     <circle cx="15.332" cy="12" r="3.332"/>
                   </svg>
-                  Direct Figma Editing (Not Available)
+                  Generate Figma Plugin
                 </button>
                 <p className="text-sm text-slate-600 mt-3">
-                  Direct file editing is not supported by Figma's REST API. Use the download options below instead.
+                  Creates a custom plugin that applies your text changes directly in Figma. You'll see the changes in your actual Figma file!
                 </p>
+                
+                <FigmaPluginInstructions />
               </div>
             )}
 

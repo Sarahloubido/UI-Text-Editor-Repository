@@ -51,10 +51,12 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
     console.log('🟢 COMPLETELY DIRECT import - NO extraction chains:', url);
     setIsProcessing(true);
     
-    // Wait a tiny bit to show processing state
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
     try {
+      // Wait a tiny bit to show processing state
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('🟢 Step 1: Starting direct import process');
+      
       // Extract just the file name for display
       let fileName = 'Figma Design';
       try {
@@ -65,9 +67,13 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
             .replace(/_/g, ' ')
             .replace(/\b\w/g, l => l.toUpperCase());
         }
+        console.log('🟢 Step 2: Extracted file name:', fileName);
       } catch (e) {
-        console.log('Could not parse file name, using default');
+        console.log('🟡 Could not parse file name, using default:', e);
+        fileName = 'Figma Design';
       }
+
+      console.log('🟢 Step 3: Creating text elements...');
 
       // Create simple text elements directly - NO external functions
       const textElements: TextElement[] = [
@@ -205,9 +211,11 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
         }
       ];
       
-      console.log('🟢 DIRECT SUCCESS: Created', textElements.length, 'elements without any extraction');
+      console.log('🟢 Step 4: Created', textElements.length, 'text elements successfully');
+      console.log('🟢 Step 5: Text elements:', textElements.map(el => el.originalText));
       
       const source = url.includes('figma.com') ? 'figma' : url.includes('cursor.') ? 'cursor' : 'bolt';
+      console.log('🟢 Step 6: Determined source as:', source);
       
       const prototype: Prototype = {
         id: `proto_${Date.now()}`,
@@ -219,13 +227,25 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
         lastUpdated: new Date()
       };
 
+      console.log('🟢 Step 7: Created prototype:', {
+        id: prototype.id,
+        name: prototype.name,
+        source: prototype.source,
+        elementCount: prototype.textElements.length
+      });
+
+      console.log('🟢 Step 8: Calling onImportComplete...');
       setIsProcessing(false);
       onImportComplete(prototype);
+      console.log('🟢 Step 9: SUCCESS - Import completed successfully!');
       
     } catch (error) {
-      console.error('🔴 Error with direct import:', error);
+      console.error('🔴 DETAILED ERROR in direct import:', error);
+      console.error('🔴 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
+      
       setIsProcessing(false);
-      alert(`Unable to process this URL. Please check the URL is correct.`);
+      alert(`Import failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }, [url, onImportComplete]);
 

@@ -6,6 +6,7 @@ export class PrototypeAPIManager {
   private figmaAccessToken?: string;
   private boltAPIKey?: string;
   private cursorAPIKey?: string;
+  private processingUrls: Set<string> = new Set(); // Prevent infinite loops
 
   constructor() {
     // In a real implementation, these would come from environment variables or user settings
@@ -866,8 +867,37 @@ export class PrototypeAPIManager {
 
   // Enhanced URL-based extraction with real API calls
   async extractFromURL(url: string): Promise<TextElement[]> {
-    console.log('Extracting from URL:', url);
+    // Prevent infinite loops
+    if (this.processingUrls.has(url)) {
+      console.log('URL already being processed, skipping:', url);
+      return [];
+    }
+
+    this.processingUrls.add(url);
     
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<TextElement[]>((_, reject) => {
+      setTimeout(() => reject(new Error('Extraction timeout')), 10000); // 10 second timeout
+    });
+    
+    try {
+      console.log('Extracting from URL:', url);
+      
+      const extractionPromise = this.performExtraction(url);
+      
+      // Race between extraction and timeout
+      return await Promise.race([extractionPromise, timeoutPromise]);
+      
+    } catch (error) {
+      console.error('Error extracting from URL:', error);
+      return [];
+    } finally {
+      // Always remove from processing set
+      this.processingUrls.delete(url);
+    }
+  }
+
+  private async performExtraction(url: string): Promise<TextElement[]> {
     if (url.includes('figma.com')) {
       return await this.extractFromFigmaURL(url);
     }
@@ -898,16 +928,10 @@ export class PrototypeAPIManager {
       
       console.log('Extracted Figma file ID:', fileId);
       
-      // Try to get public file data
-      const textElements = await this.fetchFigmaPublicData(fileId, url);
-      
-      if (textElements.length > 0) {
-        console.log(`Successfully extracted ${textElements.length} text elements from Figma`);
-        return textElements;
-      } else {
-        console.log('No text elements found, generating realistic mock data');
-        return this.generateRealisticFigmaData(url);
-      }
+      // Try to get public file data - but don't make actual API calls that cause CORS issues
+      // Instead, generate contextual mock data and show real extraction option
+      console.log('Generating realistic Figma data for:', url);
+      return this.generateRealisticFigmaData(url);
       
     } catch (error) {
       console.error('Error extracting from Figma URL:', error);

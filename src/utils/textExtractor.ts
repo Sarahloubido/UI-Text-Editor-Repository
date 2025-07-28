@@ -328,7 +328,7 @@ export class PrototypeTextExtractor {
     try {
       console.log('Processing URL:', url);
       
-      // Use enhanced API manager for better extraction
+      // Use enhanced API manager for better extraction (only once)
       const textElements = await prototypeAPIManager.extractFromURL(url);
       
       if (textElements.length > 0) {
@@ -344,21 +344,43 @@ export class PrototypeTextExtractor {
         return { textElements, screenshots };
       }
       
-      // Fallback to original method if API extraction fails
-      if (url.includes('figma.com')) {
-        return this.extractFromFigmaURL(url);
-      } else if (url.includes('cursor.')) {
-        return this.extractFromCursorURL(url);
-      } else if (url.includes('bolt.new')) {
-        return this.extractFromBoltURL(url);
-      } else {
-        return this.extractFromWebURL(url);
-      }
+      // If no elements returned, create minimal fallback
+      return { textElements: [], screenshots: {} };
+      
     } catch (error) {
-      console.error('Error extracting from URL:', error);
-      return this.getFallbackData();
+      console.error('Error in extractFromURL:', error);
+      // Return empty result instead of trying again
+      return { textElements: [], screenshots: {} };
     }
   }
+
+     // Keep the original methods as fallbacks but don't call them from extractFromURL
+   private async extractFromFigmaURLFallback(url: string): Promise<ExtractedData> {
+     try {
+        return this.extractFromFigmaURL(url);
+     } catch (error) {
+       console.error('Figma extraction error:', error);
+       return { textElements: [], screenshots: {} };
+     }
+   }
+
+   private async extractFromCursorURLFallback(url: string): Promise<ExtractedData> {
+     try {
+        return this.extractFromCursorURL(url);
+     } catch (error) {
+       console.error('Cursor extraction error:', error);
+       return { textElements: [], screenshots: {} };
+     }
+   }
+
+   private async extractFromBoltURLFallback(url: string): Promise<ExtractedData> {
+     try {
+        return this.extractFromBoltURL(url);
+     } catch (error) {
+       console.error('Bolt extraction error:', error);
+       return { textElements: [], screenshots: {} };
+     }
+   }
 
   private async extractFromImage(file: File): Promise<ExtractedData> {
     return new Promise((resolve) => {

@@ -5,11 +5,13 @@ import { TextElement } from '../types';
 interface FigmaTextExtractionProps {
   onTextExtracted: (elements: TextElement[]) => void;
   figmaUrl: string;
+  onClose: () => void;
 }
 
 export const FigmaTextExtraction: React.FC<FigmaTextExtractionProps> = ({
   onTextExtracted,
-  figmaUrl
+  figmaUrl,
+  onClose
 }) => {
   const [method, setMethod] = useState<'paste' | 'api' | 'manual'>('paste');
   const [pastedData, setPastedData] = useState('');
@@ -219,11 +221,21 @@ The app will automatically parse all the text and organize it for editing.
   };
 
   return (
-    <div className="bg-white rounded-lg border border-slate-200 p-6">
-      <div className="flex items-center mb-6">
-        <FileText className="w-6 h-6 text-blue-600 mr-3" />
-        <h3 className="text-xl font-semibold text-slate-900">Extract Real Text from Figma</h3>
-      </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center">
+              <FileText className="w-6 h-6 text-blue-600 mr-3" />
+              <h3 className="text-xl font-semibold text-slate-900">Extract Real Text from Figma</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
 
       <div className="mb-6">
         <p className="text-slate-600 mb-4">
@@ -448,6 +460,8 @@ Contact`}
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 };

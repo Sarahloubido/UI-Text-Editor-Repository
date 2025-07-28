@@ -15,6 +15,7 @@ import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
 import { FigmaStructurePreserver } from './utils/figmaStructurePreserver';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
 import { FigmaTextExtraction } from './components/FigmaTextExtraction';
+import { FigmaScreenshotExtractor } from './components/FigmaScreenshotExtractor';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -32,6 +33,7 @@ function App() {
   const [figmaFileId, setFigmaFileId] = useState<string>('');
   const [figmaUrl, setFigmaUrl] = useState<string>('');
   const [showRealExtraction, setShowRealExtraction] = useState<boolean>(false);
+  const [showScreenshotExtractor, setShowScreenshotExtractor] = useState<boolean>(false);
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -76,6 +78,31 @@ function App() {
       
       // Show success message
       alert(`Successfully extracted ${realElements.length} real text elements from your Figma design!`);
+      
+      // Move to export step with real text
+      completeStep('import');
+      setCurrentStep('export');
+    }
+  };
+
+  const handleScreenshotExtracted = (realElements: TextElement[]) => {
+    if (prototype) {
+      const updatedPrototype: Prototype = {
+        ...prototype,
+        textElements: realElements,
+        extractionMetadata: {
+          ...prototype.extractionMetadata,
+          extractionMethod: 'Screenshot + OCR',
+          extractedAt: new Date(),
+          confidence: 0.95
+        }
+      };
+      setPrototype(updatedPrototype);
+      setEditedElements(realElements);
+      setShowScreenshotExtractor(false);
+      
+      // Show success message
+      alert(`Successfully extracted ${realElements.length} text elements using screenshot + OCR!`);
       
       // Move to export step with real text
       completeStep('import');
@@ -473,10 +500,47 @@ function App() {
                     </div>
                   </div>
                   
-                  <FigmaTextExtraction 
-                    figmaUrl={figmaUrl}
-                    onTextExtracted={handleRealTextExtracted}
-                  />
+                  <div className="space-y-4">
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-yellow-900 mb-2">Choose Your Text Extraction Method:</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setShowScreenshotExtractor(true)}
+                          className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          📸 Screenshot + OCR
+                        </button>
+                        <button
+                          onClick={() => setShowRealExtraction(true)}
+                          className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          🔗 API/Manual Entry
+                        </button>
+                      </div>
+                      <div className="mt-3 text-sm text-yellow-800">
+                        <strong>Screenshot + OCR:</strong> Automatically captures and analyzes your Figma design visually<br/>
+                        <strong>API/Manual:</strong> Use Figma API token or copy-paste text manually
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Real Text Extraction Component */}
+                  {showRealExtraction && (
+                    <FigmaTextExtraction 
+                      figmaUrl={figmaUrl}
+                      onTextExtracted={handleRealTextExtracted}
+                      onClose={() => setShowRealExtraction(false)}
+                    />
+                  )}
+
+                  {/* Screenshot + OCR Extraction Component */}
+                  {showScreenshotExtractor && (
+                    <FigmaScreenshotExtractor 
+                      figmaUrl={figmaUrl}
+                      onTextExtracted={handleScreenshotExtracted}
+                      onClose={() => setShowScreenshotExtractor(false)}
+                    />
+                  )}
                 </div>
               )}
             </>

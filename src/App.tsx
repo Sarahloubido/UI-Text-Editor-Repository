@@ -5,6 +5,7 @@ import { PrototypeImport } from './components/PrototypeImport';
 import { SpreadsheetExport } from './components/SpreadsheetExport';
 import { SpreadsheetEditor } from './components/SpreadsheetEditor';
 import { DiffViewer } from './components/DiffViewer';
+import { DebugTest } from './components/DebugTest';
 import { Prototype, WorkflowStep, TextElement, DiffItem } from './types';
 import { CheckCircle, Rocket } from 'lucide-react';
 
@@ -15,6 +16,7 @@ function App() {
   const [editedElements, setEditedElements] = useState<TextElement[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishComplete, setPublishComplete] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -158,6 +160,19 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Header currentStep={getStepNumber(currentStep).toString()} totalSteps={5} />
+      
+      {/* Debug Toggle */}
+      <div className="max-w-4xl mx-auto px-8 pt-4">
+        <button
+          onClick={() => setShowDebug(!showDebug)}
+          className="mb-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+        >
+          {showDebug ? 'Hide Debug' : 'Show Debug Tests'}
+        </button>
+      </div>
+      
+      {showDebug && <DebugTest />}
+      
       <WorkflowNavigation 
         currentStep={currentStep} 
         completedSteps={completedSteps}

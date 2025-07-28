@@ -703,6 +703,7 @@ export class PrototypeTextExtractor {
     for (const element of allElements) {
       // Extract direct text content (not from children)
       const directText = this.getDirectTextContent(element);
+      
       if (directText.trim().length > 0) {
         const rect = this.simulateElementBounds(element);
         const componentPath = this.getDetailedComponentPath(element);
@@ -1802,12 +1803,35 @@ export class PrototypeTextExtractor {
 
   // Helper methods
   private getDirectTextContent(element: Element): string {
+    // Get text content but avoid nested elements that might have their own text
     let text = '';
+    
+    // First try to get direct text nodes
     for (const node of element.childNodes) {
       if (node.nodeType === Node.TEXT_NODE) {
         text += node.textContent || '';
       }
     }
+    
+    // If no direct text found, but element has text content and no child elements with text
+    if (text.trim().length === 0) {
+      const elementText = element.textContent?.trim() || '';
+      const hasChildElementsWithText = Array.from(element.children).some(child => 
+        child.textContent?.trim().length > 0
+      );
+      
+      // If this element has text but no child elements with text, use its text
+      if (elementText.length > 0 && !hasChildElementsWithText) {
+        text = elementText;
+      }
+      
+      // Special case for elements that should always have their text extracted
+      const alwaysExtract = ['button', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span', 'label'];
+      if (alwaysExtract.includes(element.tagName.toLowerCase()) && elementText.length > 0) {
+        text = elementText;
+      }
+    }
+    
     return text;
   }
 

@@ -55,6 +55,7 @@ function App() {
       // If no text elements, stay on import step to show extraction options
       if (importedPrototype.textElements.length === 0) {
         console.log('🎯 App.tsx: No text elements found, staying on import to show extraction options');
+        setShowRealExtraction(true); // 🔥 THIS WAS MISSING!
         completeStep('import');
         return; // Don't move to export yet
       }
@@ -491,7 +492,7 @@ function App() {
             <>
               <PrototypeImport onImportComplete={handleImportComplete} />
               
-              {showRealExtraction && figmaUrl && (
+              {prototype && prototype.textElements.length === 0 && figmaUrl && (
                 <div className="mt-8">
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                     <div className="flex items-start">

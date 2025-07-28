@@ -53,59 +53,50 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     return CSVParser.stringify(csvData);
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     try {
       const csvContent = generateCSV();
-      console.log('CSV content generated:', csvContent.substring(0, 200) + '...');
+      console.log('CSV content generated, length:', csvContent.length);
       
-      // Method 1: Modern browser download with better error handling
-      if (navigator.userAgent.includes('Chrome') || navigator.userAgent.includes('Firefox') || navigator.userAgent.includes('Safari')) {
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.${exportFormat}`;
-        
-        // Ensure the link is part of the document
-        document.body.appendChild(link);
-        
-        // Force click event
-        link.click();
-        
-        // Clean up
-        setTimeout(() => {
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }, 100);
-        
-        console.log('Download initiated successfully');
-      } else {
-        // Fallback: Copy to clipboard method
-        await navigator.clipboard.writeText(csvContent);
-        alert('CSV content copied to clipboard! Paste it into a text editor and save as .csv');
-      }
+      // Simple, reliable download method
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.${exportFormat}`;
+      
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up URL after download
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      console.log('Download completed successfully');
       onExportComplete();
+      
     } catch (error) {
       console.error('Download failed:', error);
       
-      // Ultimate fallback: Show content in new window
-      try {
-        const csvContent = generateCSV();
-        const newWindow = window.open('');
-        if (newWindow) {
-          newWindow.document.write('<pre>' + csvContent + '</pre>');
-          newWindow.document.title = 'CSV Export - Copy and Save';
-          alert('Download failed. CSV content is displayed in new window. Copy and save manually.');
-        } else {
-          // Last resort: Copy to clipboard
-          await navigator.clipboard.writeText(csvContent);
-          alert('Download failed. CSV content copied to clipboard!');
-        }
-      } catch (fallbackError) {
-        console.error('All download methods failed:', fallbackError);
-        alert('Download failed. Please try again or contact support.');
+      // Fallback: Show CSV content for manual copy
+      const csvContent = generateCSV();
+      const message = `Download failed. Here's your CSV content:\n\n${csvContent}\n\nCopy this text and save it as a .csv file.`;
+      
+      // Try clipboard first, then alert
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(csvContent)
+          .then(() => {
+            alert('Download failed, but CSV content has been copied to your clipboard! Paste it into a text editor and save as .csv');
+          })
+          .catch(() => {
+            alert(message);
+          });
+      } else {
+        alert(message);
       }
     }
   };

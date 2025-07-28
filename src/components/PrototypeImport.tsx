@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Upload, ExternalLink, FileImage, Layers, Download } from 'lucide-react';
 import { Prototype, TextElement } from '../types';
 import { PrototypeTextExtractor } from '../utils/textExtractor';
+import { UserGuide } from './UserGuide';
 
 interface PrototypeImportProps {
   onImportComplete: (prototype: Prototype) => void;
@@ -101,6 +102,8 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
           Load your prototype from Bolt, Figma, or Cursor to extract text elements
         </p>
       </div>
+
+      <UserGuide />
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* File Upload Method */}

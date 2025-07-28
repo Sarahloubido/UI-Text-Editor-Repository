@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PrototypeTextExtractor } from '../utils/textExtractor';
 import { CSVParser } from '../utils/csvParser';
-import { DownloadTroubleshooter } from './DownloadTroubleshooter';
+
 
 export const DebugTest: React.FC = () => {
   const [results, setResults] = useState<string>('');
@@ -157,8 +157,6 @@ export const DebugTest: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-8">
       <h2 className="text-2xl font-bold mb-6">Debug Export Functionality</h2>
-      
-      <DownloadTroubleshooter />
       
       <div className="grid grid-cols-2 gap-4 mb-6">
         <button

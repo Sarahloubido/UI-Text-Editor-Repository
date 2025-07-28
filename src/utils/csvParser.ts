@@ -72,10 +72,12 @@ export class CSVParser {
     return result;
   }
 
-  private static escapeCSVField(field: string): string {
-    if (field.includes(',') || field.includes('"') || field.includes('\n')) {
-      return `"${field.replace(/"/g, '""')}"`;
+  private static escapeCSVField(field: any): string {
+    // Convert to string first to handle numbers, booleans, etc.
+    const fieldStr = String(field || '');
+    if (fieldStr.includes(',') || fieldStr.includes('"') || fieldStr.includes('\n')) {
+      return `"${fieldStr.replace(/"/g, '""')}"`;
     }
-    return field;
+    return fieldStr;
   }
 }

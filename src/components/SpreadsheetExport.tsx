@@ -35,24 +35,24 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     }
     
     const csvData = selectedTextElements.map(element => ({
-      id: element.id,
-      original_text: element.originalText,
+      id: String(element.id || ''),
+      original_text: String(element.originalText || ''),
       edited_text: '', // Empty for writers to fill
-      frame_name: element.frameName,
-      component_path: element.componentPath,
-      component_type: element.componentType || 'unknown',
-      screen_section: element.screenSection || 'unknown',
-      hierarchy: element.hierarchy || '',
-      priority: element.priority || 'medium',
+      frame_name: String(element.frameName || ''),
+      component_path: String(element.componentPath || ''),
+      component_type: String(element.componentType || 'unknown'),
+      screen_section: String(element.screenSection || 'unknown'),
+      hierarchy: String(element.hierarchy || ''),
+      priority: String(element.priority || 'medium'),
       is_interactive: element.isInteractive ? 'Yes' : 'No',
-      font_size: element.fontSize || '',
-      font_weight: element.fontWeight || '',
-      nearby_elements: element.nearbyElements?.join('; ') || '',
-      element_role: element.elementRole || '',
-      extraction_confidence: element.extractionMetadata?.confidence || '',
-      extraction_source: element.extractionMetadata?.source || '',
-      context_notes: element.contextNotes || '',
-      image: element.image || ''
+      font_size: String(element.fontSize || ''),
+      font_weight: String(element.fontWeight || ''),
+      nearby_elements: String(element.nearbyElements?.join('; ') || ''),
+      element_role: String(element.elementRole || ''),
+      extraction_confidence: String(element.extractionMetadata?.confidence || ''),
+      extraction_source: String(element.extractionMetadata?.source || ''),
+      context_notes: String(element.contextNotes || ''),
+      image: String(element.image || '')
     }));
 
     return CSVParser.stringify(csvData);

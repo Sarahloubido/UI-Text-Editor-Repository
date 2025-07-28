@@ -12,6 +12,7 @@ import { CheckCircle, Rocket, Download, FileText, AlertCircle } from 'lucide-rea
 import { PrototypeGenerator } from './utils/prototypeGenerator';
 import { FigmaIntegration } from './utils/figmaIntegration';
 import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
+import { FigmaImportGenerator } from './utils/figmaImportGenerator';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
 
 function App() {
@@ -152,6 +153,32 @@ function App() {
     }, 1500);
   };
 
+  const handleGenerateFigmaImport = () => {
+    if (!generatedFiles || !prototype) return;
+
+    // Get the elements with changes applied
+    const updatedElements = editedElements.map(el => ({
+      ...el,
+      originalText: el.editedText || el.originalText // Use edited text as the "original" for import
+    }));
+
+    if (updatedElements.length === 0) {
+      alert('No elements to export. Try importing a prototype first!');
+      return;
+    }
+
+    // Create updated prototype for import
+    const updatedPrototype = { ...prototype, textElements: updatedElements };
+
+    // Download Figma-compatible import files
+    FigmaImportGenerator.downloadFigmaFiles(updatedPrototype, updatedElements);
+    
+    // Show instructions
+    setTimeout(() => {
+      alert(FigmaImportGenerator.getFigmaImportInstructions());
+    }, 2000);
+  };
+
   const getStepNumber = (step: WorkflowStep): number => {
     const steps: WorkflowStep[] = ['import', 'export', 'edit', 'reimport', 'publish'];
     return steps.indexOf(step) + 1;
@@ -227,50 +254,91 @@ function App() {
               </div>
             </div>
 
-            {/* Figma Plugin Generation Section */}
+            {/* Figma Integration Section */}
             {figmaFileId && (
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6 mb-6">
-                <h3 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
-                  🎯 Update Your Figma File Directly
+                <h3 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
+                  🎯 Import Your Changes Back to Figma
                 </h3>
 
-                <div className="bg-white border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-start space-x-2 mb-3">
-                    <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <h4 className="font-medium text-blue-900 mb-1">Custom Figma Plugin Solution</h4>
-                      <p className="text-blue-800 text-sm">
-                        Generate a custom Figma plugin that will apply your text changes directly inside Figma.
-                        This works by creating a plugin specifically for your changes.
-                      </p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Method 1: Plugin (Direct Edit) */}
+                  <div className="bg-white border border-blue-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2 mb-3">
+                      <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-blue-900 mb-1">Method 1: Direct Edit Plugin</h4>
+                        <p className="text-blue-800 text-sm mb-3">
+                          Apply changes directly to your existing Figma file. Perfect for live collaboration.
+                        </p>
+                      </div>
                     </div>
+                    
+                    <div className="space-y-2 text-sm text-slate-700 mb-4">
+                      <h5 className="font-medium">How it works:</h5>
+                      <ul className="list-disc list-inside space-y-1 ml-4">
+                        <li>Downloads custom plugin files</li>
+                        <li>Install plugin in Figma</li>
+                        <li>Run plugin to apply text changes</li>
+                        <li>Changes appear in your existing file</li>
+                      </ul>
+                    </div>
+
+                    <button
+                      onClick={handleGenerateFigmaPlugin}
+                      disabled={!generatedFiles}
+                      className="w-full inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                    >
+                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
+                        <circle cx="15.332" cy="12" r="3.332"/>
+                      </svg>
+                      Generate Edit Plugin
+                    </button>
                   </div>
-                  
-                  <div className="space-y-2 text-sm text-slate-700">
-                    <h5 className="font-medium">How it works:</h5>
-                    <ul className="list-disc list-inside space-y-1 ml-4">
-                      <li>Downloads 3 plugin files (manifest.json, code.js, ui.html)</li>
-                      <li>Install the plugin in Figma via "Import plugin from manifest"</li>
-                      <li>Run the plugin to apply all your text changes at once</li>
-                      <li>See your changes directly in your Figma file!</li>
-                    </ul>
+
+                  {/* Method 2: Import Files (New Design) */}
+                  <div className="bg-white border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-2 mb-3">
+                      <CheckCircle className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-purple-900 mb-1">Method 2: Import New Design</h4>
+                        <p className="text-purple-800 text-sm mb-3">
+                          Create a new Figma file with your updated text. Perfect for new versions or iterations.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2 text-sm text-slate-700 mb-4">
+                      <h5 className="font-medium">How it works:</h5>
+                      <ul className="list-disc list-inside space-y-1 ml-4">
+                        <li>Downloads Figma-compatible files</li>
+                        <li>Use File → Import in Figma</li>
+                        <li>Creates new frames with updated text</li>
+                        <li>Continue designing normally</li>
+                      </ul>
+                    </div>
+
+                    <button
+                      onClick={handleGenerateFigmaImport}
+                      disabled={!generatedFiles}
+                      className="w-full inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                    >
+                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
+                        <circle cx="15.332" cy="12" r="3.332"/>
+                      </svg>
+                      Download Import Files
+                    </button>
                   </div>
                 </div>
-
-                <button
-                  onClick={handleGenerateFigmaPlugin}
-                  disabled={!generatedFiles}
-                  className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-                >
-                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
-                    <circle cx="15.332" cy="12" r="3.332"/>
-                  </svg>
-                  Generate Figma Plugin
-                </button>
-                <p className="text-sm text-slate-600 mt-3">
-                  Creates a custom plugin that applies your text changes directly in Figma. You'll see the changes in your actual Figma file!
-                </p>
+                
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>💡 Recommendation:</strong> Use Method 1 (Edit Plugin) for quick text updates to existing files. 
+                    Use Method 2 (Import Files) when creating new versions or major iterations of your design.
+                  </p>
+                </div>
                 
                 <FigmaPluginInstructions />
               </div>

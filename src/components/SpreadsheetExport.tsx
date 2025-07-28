@@ -3,7 +3,6 @@ import { Download, FileSpreadsheet, Eye, Search } from 'lucide-react';
 import { Prototype, TextElement } from '../types';
 import { CSVParser } from '../utils/csvParser';
 import { CSVDownloadModal } from './CSVDownloadModal';
-import { FigmaImportGenerator } from '../utils/figmaImportGenerator';
 
 interface SpreadsheetExportProps {
   prototype: Prototype;
@@ -81,28 +80,7 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     onExportComplete();
   };
 
-  const handleFigmaExport = () => {
-    const selectedTextElements = prototype.textElements.filter(el => 
-      selectedElements.has(el.id)
-    );
-    
-    if (selectedTextElements.length === 0) {
-      alert('No elements selected for export');
-      return;
-    }
 
-    // Download Figma-compatible files
-    FigmaImportGenerator.downloadFigmaFiles(prototype, selectedTextElements);
-    
-    // Show instructions
-    setTimeout(() => {
-      alert(FigmaImportGenerator.getFigmaImportInstructions());
-    }, 2000);
-    
-    // Close modal and complete export
-    setShowCSVModal(false);
-    onExportComplete();
-  };
 
   const toggleElementSelection = (elementId: string) => {
     const newSelection = new Set(selectedElements);
@@ -130,7 +108,7 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
           Found <strong>{prototype.textElements.length} text elements</strong> from <span className="font-semibold">{prototype.name}</span>
         </p>
         <p className="text-slate-600 mb-6">
-          Review and select the text elements you want to export for your writing team
+          Review and select the text elements you want to export for your writing team. After editing and re-uploading the CSV, you'll get Figma import files at the final step.
         </p>
         
         {/* Export Controls */}
@@ -324,7 +302,6 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
         onClose={handleModalClose}
         csvContent={csvContent}
         fileName={`${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv`}
-        onFigmaExport={handleFigmaExport}
       />
     </div>
   );

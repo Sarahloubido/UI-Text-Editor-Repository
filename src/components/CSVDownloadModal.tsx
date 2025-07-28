@@ -6,15 +6,13 @@ interface CSVDownloadModalProps {
   onClose: () => void;
   csvContent: string;
   fileName: string;
-  onFigmaExport?: () => void;
 }
 
 export const CSVDownloadModal: React.FC<CSVDownloadModalProps> = ({
   isOpen,
   onClose,
   csvContent,
-  fileName,
-  onFigmaExport
+  fileName
 }) => {
   const [status, setStatus] = useState<{ message: string; isError: boolean } | null>(null);
 
@@ -96,37 +94,18 @@ export const CSVDownloadModal: React.FC<CSVDownloadModalProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* Figma Import Option */}
-          {onFigmaExport && (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-              <h3 className="font-medium text-purple-900 mb-2 flex items-center">
-                🎯 Import Directly into Figma
-              </h3>
-              <p className="text-purple-800 text-sm mb-3">
-                Get Figma-compatible files (JSON, SVG, CSV) that you can import directly into Figma with proper positioning and formatting.
-              </p>
-              <button
-                onClick={onFigmaExport}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-              >
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
-                  <circle cx="15.332" cy="12" r="3.332"/>
-                </svg>
-                Download Figma Import Files
-              </button>
-            </div>
-          )}
-
-          {/* Standard CSV Instructions */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <h3 className="font-medium text-blue-900 mb-2">📋 Standard CSV Export:</h3>
-            <ol className="list-decimal list-inside text-blue-800 space-y-1 text-sm">
-              <li><strong>Click "Download CSV File"</strong> below (most reliable method)</li>
-              <li><strong>OR</strong> Click "Copy to Clipboard" and paste into Excel/Google Sheets</li>
-              <li><strong>OR</strong> Right-click the text area below and copy manually</li>
-              <li>Save the file with a <strong>.csv</strong> extension</li>
-            </ol>
+          {/* CSV Export Instructions */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="font-medium text-blue-900 mb-2">📋 CSV Export for Text Editing:</h3>
+                          <ol className="list-decimal list-inside text-blue-800 space-y-1 text-sm">
+                <li><strong>Click "Download CSV File"</strong> below (most reliable method)</li>
+                <li><strong>OR</strong> Click "Copy to Clipboard" and paste into Excel/Google Sheets</li>
+                <li><strong>OR</strong> Right-click the text area below and copy manually</li>
+                <li>Edit your text content in the spreadsheet</li>
+                <li>Save the file with a <strong>.csv</strong> extension</li>
+                <li><strong>Re-upload the edited CSV</strong> in the next step</li>
+                <li><strong>Apply changes and get Figma import files</strong> at the final step</li>
+              </ol>
           </div>
 
           {/* Action Buttons */}

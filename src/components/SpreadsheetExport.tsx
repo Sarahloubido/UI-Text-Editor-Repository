@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { Download, FileSpreadsheet, Eye, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, FileSpreadsheet, Eye, Search, Edit, FileDown } from 'lucide-react';
 import { Prototype, TextElement } from '../types';
 import { CSVParser } from '../utils/csvParser';
 import { CSVDownloadModal } from './CSVDownloadModal';
+import { ScreenshotGenerator } from '../utils/screenshotGenerator';
 
 interface SpreadsheetExportProps {
   prototype: Prototype;
-  onExportComplete: () => void;
+  onExportComplete: (selectedElementIds?: string[]) => void;
 }
 
 export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({ 
@@ -20,12 +21,29 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
   );
   const [showCSVModal, setShowCSVModal] = useState(false);
   const [csvContent, setCsvContent] = useState('');
+  const [editMode, setEditMode] = useState<'download' | 'inline'>('download');
+  const [elementPreviews, setElementPreviews] = useState<{ [key: string]: string }>({});
+  const [previewsLoaded, setPreviewsLoaded] = useState(false);
 
   const filteredElements = prototype.textElements.filter(element =>
     element.originalText.toLowerCase().includes(searchTerm.toLowerCase()) ||
     element.frameName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     element.componentPath.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Generate previews for elements
+  useEffect(() => {
+    const generatePreviews = async () => {
+      console.log('Generating visual previews for text elements...');
+      const designType = prototype.name.toLowerCase().includes('mobile') ? 'mobile' : 'web';
+      const previews = ScreenshotGenerator.generateBatchPreviews(prototype.textElements, designType);
+      setElementPreviews(previews);
+      setPreviewsLoaded(true);
+      console.log(`Generated ${Object.keys(previews).length} element previews`);
+    };
+
+    generatePreviews();
+  }, [prototype.textElements, prototype.name]);
 
   const generateCSV = () => {
     const selectedTextElements = prototype.textElements.filter(el => 
@@ -62,22 +80,28 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
   };
 
   const handleExport = () => {
-    const content = generateCSV();
-    console.log('CSV generated, length:', content.length);
-    
-    if (!content || content.length < 50) {
-      alert('Error: No CSV content generated. Please try importing your prototype again.');
-      return;
-    }
+    if (editMode === 'download') {
+      const content = generateCSV();
+      console.log('CSV generated, length:', content.length);
+      
+      if (!content || content.length < 50) {
+        alert('Error: No CSV content generated. Please try importing your prototype again.');
+        return;
+      }
 
-    // Set the CSV content and show the modal
-    setCsvContent(content);
-    setShowCSVModal(true);
+      // Set the CSV content and show the modal
+      setCsvContent(content);
+      setShowCSVModal(true);
+    } else {
+      // Inline editing mode - proceed directly to editing with selected elements
+      const selectedElementIds = Array.from(selectedElements);
+      onExportComplete(selectedElementIds);
+    }
   };
 
   const handleModalClose = () => {
     setShowCSVModal(false);
-    onExportComplete();
+    onExportComplete(); // For download mode, no specific elements
   };
 
 
@@ -111,49 +135,129 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
           Review and select the text elements you want to export for your writing team. After editing and re-uploading the CSV, you'll get Figma import files at the final step.
         </p>
         
-        {/* Export Controls */}
+        {/* Edit Mode Selection */}
         <div className="bg-white rounded-lg border border-slate-200 p-6 mb-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+          <h3 className="text-lg font-medium text-slate-900 mb-4">Choose Your Editing Method</h3>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+              editMode === 'download' 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-slate-200 hover:border-slate-300'
+            }`} onClick={() => setEditMode('download')}>
+              <div className="flex items-start space-x-3">
                 <input
                   type="radio"
-                  id="csv"
-                  name="format"
-                  value="csv"
-                  checked={exportFormat === 'csv'}
-                  onChange={() => setExportFormat('csv')}
-                  className="text-blue-600"
+                  id="download"
+                  name="editMode"
+                  value="download"
+                  checked={editMode === 'download'}
+                  onChange={() => setEditMode('download')}
+                  className="mt-1 text-blue-600"
                 />
-                <label htmlFor="csv" className="text-sm font-medium text-slate-700">CSV</label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="xlsx"
-                  name="format"
-                  value="xlsx"
-                  checked={exportFormat === 'xlsx'}
-                  onChange={() => setExportFormat('xlsx')}
-                  className="text-blue-600"
-                />
-                <label htmlFor="xlsx" className="text-sm font-medium text-slate-700">XLSX</label>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <FileDown className="w-5 h-5 text-blue-600" />
+                    <label htmlFor="download" className="font-medium text-slate-900">Download & Edit Externally</label>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Perfect for large amounts of text or collaborative editing. Download CSV to edit in Excel, Google Sheets, or any spreadsheet application.
+                  </p>
+                  <div className="mt-2 text-xs text-green-700">
+                    ✓ Best for bulk editing • ✓ Team collaboration • ✓ Advanced spreadsheet features
+                  </div>
+                </div>
               </div>
             </div>
-            
+
+            <div className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+              editMode === 'inline' 
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-slate-200 hover:border-slate-300'
+            }`} onClick={() => setEditMode('inline')}>
+              <div className="flex items-start space-x-3">
+                <input
+                  type="radio"
+                  id="inline"
+                  name="editMode"
+                  value="inline"
+                  checked={editMode === 'inline'}
+                  onChange={() => setEditMode('inline')}
+                  className="mt-1 text-blue-600"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Edit className="w-5 h-5 text-blue-600" />
+                    <label htmlFor="inline" className="font-medium text-slate-900">Edit Directly in App</label>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    Perfect for quick edits or smaller amounts of text. Edit directly in the browser with visual context and immediate feedback.
+                  </p>
+                  <div className="mt-2 text-xs text-green-700">
+                    ✓ Quick & easy • ✓ Visual context • ✓ Immediate preview
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {editMode === 'download' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <h4 className="font-medium text-blue-900 mb-2">Export Format</h4>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="csv"
+                    name="format"
+                    value="csv"
+                    checked={exportFormat === 'csv'}
+                    onChange={() => setExportFormat('csv')}
+                    className="text-blue-600"
+                  />
+                  <label htmlFor="csv" className="text-sm font-medium text-slate-700">CSV (Recommended)</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="xlsx"
+                    name="format"
+                    value="xlsx"
+                    checked={exportFormat === 'xlsx'}
+                    onChange={() => setExportFormat('xlsx')}
+                    className="text-blue-600"
+                  />
+                  <label htmlFor="xlsx" className="text-sm font-medium text-slate-700">XLSX</label>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex justify-center">
             <button
               onClick={handleExport}
               disabled={selectedElements.size === 0}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Export {selectedElements.size} Elements
+              {editMode === 'download' ? (
+                <>
+                  <FileDown className="w-5 h-5 mr-2" />
+                  Download CSV ({selectedElements.size} Elements)
+                </>
+              ) : (
+                <>
+                  <Edit className="w-5 h-5 mr-2" />
+                  Start Editing ({selectedElements.size} Elements)
+                </>
+              )}
             </button>
           </div>
           
-          <div className="mt-2 text-xs text-slate-500">
-            <p>💡 The CSV content will be shown in a modal with download and copy options</p>
-          </div>
+          {editMode === 'download' && (
+            <div className="mt-3 text-center text-xs text-slate-500">
+              <p>💡 The CSV will open in a modal with download and copy options</p>
+            </div>
+          )}
         </div>
 
         {/* Search and Filter */}
@@ -193,11 +297,10 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
                     className="text-blue-600"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Preview</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Visual Context</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Text Content</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Location</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Component Path</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Notes</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Component Details</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -212,15 +315,23 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
                     />
                   </td>
                   <td className="px-4 py-4">
-                    {element.image && (
-                      <div className="w-20 h-16 rounded overflow-hidden bg-slate-100 border border-slate-200">
+                    <div className="w-24 h-16 rounded overflow-hidden bg-slate-100 border border-slate-200">
+                      {previewsLoaded && elementPreviews[element.id] ? (
                         <img
-                          src={element.image}
-                          alt={`Preview of ${element.originalText}`}
-                          className="w-full h-full object-contain"
+                          src={elementPreviews[element.id]}
+                          alt={`Visual context for "${element.originalText}"`}
+                          className="w-full h-full object-cover"
+                          title={`${element.componentType} in ${element.frameName} (${element.screenSection})`}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                          <div className="text-xs text-slate-500 text-center p-1">
+                            <div className="font-medium">{element.componentType}</div>
+                            <div className="text-[10px]">{element.screenSection}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4">
                     <div className="max-w-xs">
@@ -233,20 +344,42 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <p className="text-sm text-slate-600">{element.frameName}</p>
-                    <p className="text-xs text-slate-500">
-                      {element.boundingBox.width}×{element.boundingBox.height}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-slate-900">{element.frameName}</p>
+                      <p className="text-xs text-slate-500">
+                        {element.screenSection} • {element.boundingBox.width}×{element.boundingBox.height}
+                      </p>
+                    </div>
                   </td>
                   <td className="px-4 py-4">
-                    <p className="text-sm text-slate-600 font-mono text-xs max-w-xs truncate">
-                      {element.componentPath}
-                    </p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="text-sm text-slate-600 max-w-xs line-clamp-2">
-                      {element.contextNotes}
-                    </p>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          element.componentType === 'button' ? 'bg-blue-100 text-blue-800' :
+                          element.componentType === 'heading' ? 'bg-purple-100 text-purple-800' :
+                          element.componentType === 'navigation' ? 'bg-green-100 text-green-800' :
+                          element.componentType === 'content' ? 'bg-gray-100 text-gray-800' :
+                          'bg-slate-100 text-slate-800'
+                        }`}>
+                          {element.componentType}
+                        </span>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          element.priority === 'high' ? 'bg-red-100 text-red-800' :
+                          element.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {element.priority}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 font-mono max-w-xs truncate">
+                        {element.componentPath}
+                      </p>
+                      {element.fontSize && (
+                        <p className="text-xs text-slate-500">
+                          {element.fontFamily || 'Inter'} {element.fontSize}px
+                        </p>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

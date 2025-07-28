@@ -50,7 +50,14 @@ function App() {
     setCurrentStep('export');
   };
 
-  const handleExportComplete = () => {
+  const handleExportComplete = (selectedElementIds?: string[]) => {
+    if (prototype && selectedElementIds) {
+      // Filter to only selected elements for inline editing
+      const elementsToEdit = prototype.textElements.filter(el => 
+        selectedElementIds.includes(el.id)
+      );
+      setEditedElements(elementsToEdit);
+    }
     completeStep('export');
     setCurrentStep('edit');
   };

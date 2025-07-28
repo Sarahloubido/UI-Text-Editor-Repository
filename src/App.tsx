@@ -14,8 +14,7 @@ import { FigmaIntegration } from './utils/figmaIntegration';
 import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
 import { FigmaStructurePreserver } from './utils/figmaStructurePreserver';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
-import { FigmaTextExtraction } from './components/FigmaTextExtraction';
-import { FigmaScreenshotExtractor } from './components/FigmaScreenshotExtractor';
+import { SimpleTextEntry } from './components/SimpleTextEntry';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -32,8 +31,7 @@ function App() {
   } | null>(null);
   const [figmaFileId, setFigmaFileId] = useState<string>('');
   const [figmaUrl, setFigmaUrl] = useState<string>('');
-  const [showRealExtraction, setShowRealExtraction] = useState<boolean>(false);
-  const [showScreenshotExtractor, setShowScreenshotExtractor] = useState<boolean>(false);
+  const [showSimpleEntry, setShowSimpleEntry] = useState<boolean>(false);
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -67,51 +65,23 @@ function App() {
     console.log('🎯 App.tsx: Moving to export step');
   };
 
-  const handleRealTextExtracted = (realElements: TextElement[]) => {
+  const handleSimpleTextExtracted = (textElements: TextElement[]) => {
     if (prototype) {
       const updatedPrototype: Prototype = {
         ...prototype,
-        textElements: realElements,
+        textElements: textElements,
         extractionMetadata: {
           ...prototype.extractionMetadata,
-          extractionMethod: 'Real Figma Text',
+          extractionMethod: 'Simple Manual Entry',
           extractedAt: new Date(),
-          confidence: 0.98
+          confidence: 1.0
         }
       };
       setPrototype(updatedPrototype);
-      setEditedElements(realElements);
-      setShowRealExtraction(false);
+      setEditedElements(textElements);
+      setShowSimpleEntry(false);
       
-      // Show success message
-      alert(`Successfully extracted ${realElements.length} real text elements from your Figma design!`);
-      
-      // Move to export step with real text
-      completeStep('import');
-      setCurrentStep('export');
-    }
-  };
-
-  const handleScreenshotExtracted = (realElements: TextElement[]) => {
-    if (prototype) {
-      const updatedPrototype: Prototype = {
-        ...prototype,
-        textElements: realElements,
-        extractionMetadata: {
-          ...prototype.extractionMetadata,
-          extractionMethod: 'Screenshot + OCR',
-          extractedAt: new Date(),
-          confidence: 0.95
-        }
-      };
-      setPrototype(updatedPrototype);
-      setEditedElements(realElements);
-      setShowScreenshotExtractor(false);
-      
-      // Show success message
-      alert(`Successfully extracted ${realElements.length} text elements using screenshot + OCR!`);
-      
-      // Move to export step with real text
+      // Move to export step with text
       completeStep('import');
       setCurrentStep('export');
     }
@@ -492,75 +462,59 @@ function App() {
             <>
               <PrototypeImport onImportComplete={handleImportComplete} />
               
-              {prototype && prototype.textElements.length === 0 && figmaUrl && !showRealExtraction && !showScreenshotExtractor && (
+              {prototype && prototype.textElements.length === 0 && figmaUrl && !showSimpleEntry && (
                 <div className="mt-8">
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-start">
-                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-medium text-amber-900 mb-2">Extract Real Text from Your Figma Design</h4>
-                        <p className="text-sm text-amber-800">
-                          The system generated mock text elements. Want to use your actual Figma text instead? 
-                          Use the tool below to extract the real text from your design.
-                        </p>
+                                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                      <div className="flex items-start">
+                        <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+                        <div>
+                          <h4 className="font-medium text-blue-900 mb-2">Ready for Your Content!</h4>
+                          <p className="text-sm text-blue-800">
+                            Your Figma file is connected. Now let's add the actual text content you want to edit.
+                            Just list out the text elements and we'll handle the rest automatically.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
                   
                   <div className="space-y-4">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-red-900 mb-2">⚠️ Real Text Extraction Required</h4>
-                      <p className="text-red-800 mb-4">
-                        Your Figma URL has been imported, but <strong>NO text elements were created</strong>. 
-                        You must extract the real text from your design using one of these methods:
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-green-900 mb-2">📝 Add Your Text Content</h4>
+                      <p className="text-green-800 mb-4">
+                        Your Figma URL has been imported! Now simply <strong>add the text content</strong> from your design. 
+                        This is quick, easy, and gives you full control over what gets edited.
                       </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <button
-                          onClick={() => setShowScreenshotExtractor(true)}
-                          className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                        >
-                          📸 Screenshot + OCR (Recommended)
-                        </button>
+                      <div className="text-center">
                         <button
                           onClick={() => {
-                            console.log('🔗 API/Manual Entry button clicked');
-                            setShowRealExtraction(true);
+                            console.log('📝 Add Text Content button clicked');
+                            setShowSimpleEntry(true);
                           }}
-                          className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                          className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
                         >
-                          🔗 API/Manual Entry
+                          📝 Add Text Content
                         </button>
                       </div>
-                      <div className="mt-3 text-sm text-red-800">
-                        <strong>Screenshot + OCR:</strong> Visually captures your Figma design and extracts all visible text automatically<br/>
-                        <strong>API/Manual:</strong> Use your Figma API token or copy-paste text content manually
+                      <div className="mt-3 text-sm text-green-800 text-center">
+                        <strong>Simple & Fast:</strong> Just type or paste your text → Smart detection handles the rest!
                       </div>
                     </div>
                     
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-blue-900 mb-2">🚫 No Fake Text Policy</h4>
+                      <h4 className="font-semibold text-blue-900 mb-2">✨ Smart & Simple</h4>
                       <p className="text-blue-800 text-sm">
-                        This app no longer generates mock or fake text. You will only get <strong>real, actual text content</strong> 
-                        from your Figma designs. This ensures 100% accuracy for your content editing workflow.
+                        Our smart detection automatically identifies buttons, headings, navigation, and other UI elements.
+                        You just provide the text - we handle all the technical details for perfect editing workflow.
                       </p>
                     </div>
                   </div>
 
-                  {/* Real Text Extraction Component */}
-                  {showRealExtraction && (
-                    <FigmaTextExtraction 
+                  {/* Simple Text Entry Component */}
+                  {showSimpleEntry && (
+                    <SimpleTextEntry 
                       figmaUrl={figmaUrl}
-                      onTextExtracted={handleRealTextExtracted}
-                      onClose={() => setShowRealExtraction(false)}
-                    />
-                  )}
-
-                  {/* Screenshot + OCR Extraction Component */}
-                  {showScreenshotExtractor && (
-                    <FigmaScreenshotExtractor 
-                      figmaUrl={figmaUrl}
-                      onTextExtracted={handleScreenshotExtracted}
-                      onClose={() => setShowScreenshotExtractor(false)}
+                      onTextExtracted={handleSimpleTextExtracted}
+                      onClose={() => setShowSimpleEntry(false)}
                     />
                   )}
                 </div>

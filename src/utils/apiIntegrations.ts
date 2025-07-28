@@ -1,4 +1,5 @@
 import { TextElement } from '../types';
+import { FigmaTextExtractor } from './figmaTextExtractor';
 
 // Enhanced API integrations for better prototype text extraction
 export class PrototypeAPIManager {

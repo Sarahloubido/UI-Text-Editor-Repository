@@ -29,10 +29,6 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
       selectedElements.has(el.id)
     );
     
-    console.log('Total elements:', prototype.textElements.length);
-    console.log('Selected elements:', selectedElements.size);
-    console.log('Filtered selected elements:', selectedTextElements.length);
-    
     if (selectedTextElements.length === 0) {
       console.warn('No elements selected for export');
       return '';
@@ -59,54 +55,130 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
       image: element.image || ''
     }));
 
-    const csvContent = CSVParser.stringify(csvData);
-    console.log('CSV content sample:', csvContent.substring(0, 200));
-    return csvContent;
+    return CSVParser.stringify(csvData);
   };
 
   const handleExport = () => {
-    try {
-      const csvContent = generateCSV();
-      console.log('CSV generated, length:', csvContent.length);
+    const csvContent = generateCSV();
+    console.log('CSV generated, length:', csvContent.length);
+    
+    if (!csvContent || csvContent.length < 50) {
+      alert('Error: No CSV content generated. Please try importing your prototype again.');
+      return;
+    }
+
+    // Create a new window with the CSV content
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      newWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>CSV Export - ${prototype.name}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              padding: 20px; 
+              max-width: 1200px; 
+              margin: 0 auto; 
+            }
+            textarea { 
+              width: 100%; 
+              height: 400px; 
+              font-family: monospace; 
+              font-size: 12px; 
+              border: 1px solid #ccc; 
+              padding: 10px; 
+            }
+            .download-btn {
+              background: #3b82f6;
+              color: white;
+              padding: 12px 24px;
+              border: none;
+              border-radius: 6px;
+              font-size: 16px;
+              cursor: pointer;
+              margin: 10px 10px 10px 0;
+            }
+            .download-btn:hover { background: #2563eb; }
+            .copy-btn {
+              background: #10b981;
+              color: white;
+              padding: 12px 24px;
+              border: none;
+              border-radius: 6px;
+              font-size: 16px;
+              cursor: pointer;
+              margin: 10px 10px 10px 0;
+            }
+            .copy-btn:hover { background: #059669; }
+            .instructions {
+              background: #f3f4f6;
+              padding: 15px;
+              border-radius: 6px;
+              margin-bottom: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>CSV Export Ready</h1>
+          <div class="instructions">
+            <h3>📋 How to save your CSV file:</h3>
+            <ol>
+              <li><strong>Click "Download CSV File"</strong> below (most reliable method)</li>
+              <li><strong>OR</strong> Click "Copy to Clipboard" and paste into Excel/Google Sheets</li>
+              <li><strong>OR</strong> Right-click the text area and copy, then paste into a text editor</li>
+              <li>Save the file with a <strong>.csv</strong> extension</li>
+            </ol>
+          </div>
+          
+          <button class="download-btn" onclick="downloadCSV()">📥 Download CSV File</button>
+          <button class="copy-btn" onclick="copyToClipboard()">📋 Copy to Clipboard</button>
+          
+          <h3>CSV Content:</h3>
+          <textarea id="csvContent" readonly>${csvContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
+          
+          <script>
+            function downloadCSV() {
+              const content = document.getElementById('csvContent').value;
+              const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = '${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv';
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              alert('Download started! Check your Downloads folder.');
+            }
+            
+            function copyToClipboard() {
+              const textarea = document.getElementById('csvContent');
+              textarea.select();
+              document.execCommand('copy');
+              alert('CSV content copied to clipboard!\\n\\nPaste it into Excel, Google Sheets, or a text editor and save as .csv');
+            }
+            
+            // Auto-select content for easy copying
+            document.getElementById('csvContent').focus();
+          </script>
+        </body>
+        </html>
+      `);
       
-      if (!csvContent || csvContent.length < 50) {
-        alert('Error: No CSV content generated. Please try importing your prototype again.');
-        return;
-      }
-      
-      // Simple download
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const filename = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.${exportFormat}`;
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.style.display = 'none';
-      
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Cleanup
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-      
-      console.log('Download initiated for file:', filename);
+      console.log('CSV export window opened');
       onExportComplete();
-      
-    } catch (error) {
-      console.error('Export failed:', error);
-      
-      // Fallback: copy to clipboard
-      try {
-        const csvContent = generateCSV();
-        navigator.clipboard.writeText(csvContent).then(() => {
-          alert('Download failed, but CSV content copied to clipboard!\n\nPaste into a text editor and save as .csv file');
-        });
-      } catch (clipboardError) {
-        alert('Export failed. Please check the console for CSV content.');
-        console.log('CSV Content:', generateCSV());
-      }
+    } else {
+      // Pop-up blocked, use clipboard fallback
+      navigator.clipboard.writeText(csvContent).then(() => {
+        alert('Pop-up blocked! CSV content copied to clipboard instead.\\n\\nPaste into a text editor and save as .csv file');
+        onExportComplete();
+      }).catch(() => {
+        // Last resort: show content in alert
+        alert('Here is your CSV content - copy and save as .csv:\\n\\n' + csvContent.substring(0, 500) + '...');
+        console.log('Full CSV Content:', csvContent);
+      });
     }
   };
 

@@ -233,17 +233,17 @@ export class PrototypeAPIManager {
     const elements: TextElement[] = [];
     let elementIndex = 0;
 
-    const addElement = (text: string, componentType: TextElement['componentType'], screenSection: TextElement['screenSection'], priority: TextElement['priority'], frame: string = 'Main Screen') => {
+    const addElement = (text: string, componentType: TextElement['componentType'], screenSection: TextElement['screenSection'], priority: TextElement['priority'], frame: string = 'Main Screen', fontSize?: number, fontFamily?: string) => {
       elements.push({
         id: `figma_${elementIndex++}`,
         originalText: text,
         frameName: frame,
         componentPath: `${frame}/${componentType}`,
         boundingBox: {
-          x: Math.random() * 800,
-          y: Math.random() * 600,
-          width: Math.min(400, text.length * 8 + 40),
-          height: text.length > 50 ? 60 : 32
+          x: Math.random() * 1200 + 50,
+          y: Math.random() * 800 + 50,
+          width: Math.min(600, text.length * 8 + 40),
+          height: text.length > 50 ? 80 : (fontSize || 16) + 16
         },
         contextNotes: `Extracted from ${fileName} - ${componentType} in ${screenSection}`,
         componentType,
@@ -251,6 +251,9 @@ export class PrototypeAPIManager {
         isInteractive: ['button', 'link', 'navigation'].includes(componentType),
         screenSection,
         priority,
+        fontSize: fontSize || (componentType === 'heading' ? 24 : 16),
+        fontFamily: fontFamily || 'Inter',
+        fontWeight: componentType === 'heading' ? '600' : '400',
         extractionMetadata: {
           source: 'api' as const,
           confidence: 0.92,
@@ -261,50 +264,305 @@ export class PrototypeAPIManager {
     };
 
     if (designType === 'website') {
-      // Website/Landing Page Elements
-      addElement('Welcome to Our Platform', 'heading', 'header', 'high', 'Hero Section');
-      addElement('Transform your business with our innovative solutions', 'content', 'main', 'high', 'Hero Section');
-      addElement('Get Started Free', 'button', 'main', 'high', 'Hero Section');
-      addElement('Learn More', 'button', 'main', 'medium', 'Hero Section');
-      addElement('Home', 'navigation', 'header', 'medium', 'Navigation');
-      addElement('About', 'navigation', 'header', 'medium', 'Navigation');
-      addElement('Services', 'navigation', 'header', 'medium', 'Navigation');
-      addElement('Contact', 'navigation', 'header', 'medium', 'Navigation');
-      addElement('Features That Matter', 'heading', 'main', 'high', 'Features Section');
-      addElement('Fast Performance', 'heading', 'main', 'medium', 'Features Section');
-      addElement('Built for speed and reliability', 'content', 'main', 'medium', 'Features Section');
-      addElement('Easy Integration', 'heading', 'main', 'medium', 'Features Section');
-      addElement('Seamlessly integrate with your existing tools', 'content', 'main', 'medium', 'Features Section');
-      addElement('24/7 Support', 'heading', 'main', 'medium', 'Features Section');
-      addElement('Our team is here to help whenever you need', 'content', 'main', 'medium', 'Features Section');
-      addElement('Start Your Free Trial', 'button', 'main', 'high', 'CTA Section');
-      addElement('No credit card required', 'content', 'main', 'medium', 'CTA Section');
-      addElement('© 2024 Company Name. All rights reserved.', 'content', 'footer', 'low', 'Footer');
-      addElement('Privacy Policy', 'link', 'footer', 'low', 'Footer');
-      addElement('Terms of Service', 'link', 'footer', 'low', 'Footer');
+      // Header & Navigation
+      addElement('Company Logo', 'heading', 'header', 'high', 'Header', 20, 'Inter');
+      addElement('Home', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('About', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Services', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Portfolio', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Blog', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Contact', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Sign In', 'button', 'header', 'medium', 'Navigation', 14, 'Inter');
+      addElement('Get Started', 'button', 'header', 'high', 'Navigation', 14, 'Inter');
+
+      // Hero Section
+      addElement('Welcome to Our Platform', 'heading', 'main', 'high', 'Hero Section', 48, 'Inter');
+      addElement('Transform your business with our innovative solutions', 'content', 'main', 'high', 'Hero Section', 18, 'Inter');
+      addElement('Join thousands of companies that trust us to deliver exceptional results and drive growth', 'content', 'main', 'medium', 'Hero Section', 16, 'Inter');
+      addElement('Get Started Free', 'button', 'main', 'high', 'Hero Section', 16, 'Inter');
+      addElement('Learn More', 'button', 'main', 'medium', 'Hero Section', 16, 'Inter');
+      addElement('Watch Demo', 'button', 'main', 'medium', 'Hero Section', 14, 'Inter');
+      addElement('Trusted by 10,000+ companies worldwide', 'content', 'main', 'medium', 'Hero Section', 14, 'Inter');
+
+      // Features Section
+      addElement('Features That Matter', 'heading', 'main', 'high', 'Features Section', 36, 'Inter');
+      addElement('Everything you need to succeed in today\'s competitive market', 'content', 'main', 'medium', 'Features Section', 18, 'Inter');
+      
+      // Feature 1
+      addElement('Fast Performance', 'heading', 'main', 'medium', 'Features Section', 24, 'Inter');
+      addElement('Built for speed and reliability', 'content', 'main', 'medium', 'Features Section', 16, 'Inter');
+      addElement('Our platform delivers lightning-fast results with 99.9% uptime guarantee', 'content', 'main', 'low', 'Features Section', 14, 'Inter');
+      addElement('Learn More', 'link', 'main', 'low', 'Features Section', 14, 'Inter');
+      
+      // Feature 2
+      addElement('Easy Integration', 'heading', 'main', 'medium', 'Features Section', 24, 'Inter');
+      addElement('Seamlessly integrate with your existing tools', 'content', 'main', 'medium', 'Features Section', 16, 'Inter');
+      addElement('Connect with 100+ popular apps and services in just a few clicks', 'content', 'main', 'low', 'Features Section', 14, 'Inter');
+      addElement('View Integrations', 'link', 'main', 'low', 'Features Section', 14, 'Inter');
+      
+      // Feature 3
+      addElement('24/7 Support', 'heading', 'main', 'medium', 'Features Section', 24, 'Inter');
+      addElement('Our team is here to help whenever you need', 'content', 'main', 'medium', 'Features Section', 16, 'Inter');
+      addElement('Get instant help from our expert support team via chat, email, or phone', 'content', 'main', 'low', 'Features Section', 14, 'Inter');
+      addElement('Contact Support', 'link', 'main', 'low', 'Features Section', 14, 'Inter');
+
+      // Feature 4
+      addElement('Advanced Analytics', 'heading', 'main', 'medium', 'Features Section', 24, 'Inter');
+      addElement('Data-driven insights for better decisions', 'content', 'main', 'medium', 'Features Section', 16, 'Inter');
+      addElement('Track performance, monitor trends, and optimize your strategy with our powerful analytics dashboard', 'content', 'main', 'low', 'Features Section', 14, 'Inter');
+      addElement('View Analytics', 'link', 'main', 'low', 'Features Section', 14, 'Inter');
+
+      // Testimonials Section
+      addElement('What Our Customers Say', 'heading', 'main', 'high', 'Testimonials', 36, 'Inter');
+      addElement('"This platform has completely transformed how we work. Highly recommended!"', 'content', 'main', 'medium', 'Testimonials', 18, 'Inter');
+      addElement('Sarah Johnson', 'content', 'main', 'medium', 'Testimonials', 16, 'Inter');
+      addElement('CEO, TechCorp', 'content', 'main', 'low', 'Testimonials', 14, 'Inter');
+      addElement('"The best investment we\'ve made for our business. Results were immediate."', 'content', 'main', 'medium', 'Testimonials', 18, 'Inter');
+      addElement('Mike Chen', 'content', 'main', 'medium', 'Testimonials', 16, 'Inter');
+      addElement('Founder, StartupXYZ', 'content', 'main', 'low', 'Testimonials', 14, 'Inter');
+      addElement('"Outstanding support and incredible features. Can\'t imagine working without it."', 'content', 'main', 'medium', 'Testimonials', 18, 'Inter');
+      addElement('Lisa Rodriguez', 'content', 'main', 'medium', 'Testimonials', 16, 'Inter');
+      addElement('Marketing Director, BigBrand', 'content', 'main', 'low', 'Testimonials', 14, 'Inter');
+
+      // Pricing Section
+      addElement('Simple, Transparent Pricing', 'heading', 'main', 'high', 'Pricing', 36, 'Inter');
+      addElement('Choose the plan that works best for your business', 'content', 'main', 'medium', 'Pricing', 18, 'Inter');
+      
+      // Starter Plan
+      addElement('Starter', 'heading', 'main', 'medium', 'Pricing', 24, 'Inter');
+      addElement('$9', 'content', 'main', 'high', 'Pricing', 36, 'Inter');
+      addElement('per month', 'content', 'main', 'medium', 'Pricing', 14, 'Inter');
+      addElement('Perfect for small teams getting started', 'content', 'main', 'medium', 'Pricing', 16, 'Inter');
+      addElement('Up to 5 users', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('10GB storage', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Basic support', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Core features', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Choose Starter', 'button', 'main', 'medium', 'Pricing', 16, 'Inter');
+      
+      // Professional Plan
+      addElement('Professional', 'heading', 'main', 'medium', 'Pricing', 24, 'Inter');
+      addElement('$29', 'content', 'main', 'high', 'Pricing', 36, 'Inter');
+      addElement('per month', 'content', 'main', 'medium', 'Pricing', 14, 'Inter');
+      addElement('Best for growing businesses', 'content', 'main', 'medium', 'Pricing', 16, 'Inter');
+      addElement('Up to 25 users', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('100GB storage', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Priority support', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Advanced features', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Analytics dashboard', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Choose Professional', 'button', 'main', 'high', 'Pricing', 16, 'Inter');
+      
+      // Enterprise Plan
+      addElement('Enterprise', 'heading', 'main', 'medium', 'Pricing', 24, 'Inter');
+      addElement('$99', 'content', 'main', 'high', 'Pricing', 36, 'Inter');
+      addElement('per month', 'content', 'main', 'medium', 'Pricing', 14, 'Inter');
+      addElement('For large organizations', 'content', 'main', 'medium', 'Pricing', 16, 'Inter');
+      addElement('Unlimited users', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('1TB storage', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('24/7 dedicated support', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('All features included', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Custom integrations', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('SLA guarantee', 'content', 'main', 'low', 'Pricing', 14, 'Inter');
+      addElement('Contact Sales', 'button', 'main', 'medium', 'Pricing', 16, 'Inter');
+
+      // CTA Section
+      addElement('Ready to Get Started?', 'heading', 'main', 'high', 'CTA Section', 36, 'Inter');
+      addElement('Join thousands of satisfied customers today', 'content', 'main', 'medium', 'CTA Section', 18, 'Inter');
+      addElement('Start Your Free Trial', 'button', 'main', 'high', 'CTA Section', 18, 'Inter');
+      addElement('No credit card required', 'content', 'main', 'medium', 'CTA Section', 14, 'Inter');
+      addElement('14-day free trial', 'content', 'main', 'medium', 'CTA Section', 14, 'Inter');
+      addElement('Cancel anytime', 'content', 'main', 'medium', 'CTA Section', 14, 'Inter');
+
+      // Footer
+      addElement('Company', 'heading', 'footer', 'medium', 'Footer', 16, 'Inter');
+      addElement('About Us', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Careers', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Press', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Contact', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      
+      addElement('Product', 'heading', 'footer', 'medium', 'Footer', 16, 'Inter');
+      addElement('Features', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Pricing', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Integrations', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('API Docs', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      
+      addElement('Resources', 'heading', 'footer', 'medium', 'Footer', 16, 'Inter');
+      addElement('Blog', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Help Center', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Community', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Tutorials', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      
+      addElement('Legal', 'heading', 'footer', 'medium', 'Footer', 16, 'Inter');
+      addElement('Privacy Policy', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Terms of Service', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Cookie Policy', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('GDPR', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      
+      addElement('© 2024 Company Name. All rights reserved.', 'content', 'footer', 'low', 'Footer', 12, 'Inter');
+      addElement('Follow us on social media', 'content', 'footer', 'low', 'Footer', 12, 'Inter');
+      addElement('Facebook', 'link', 'footer', 'low', 'Footer', 12, 'Inter');
+      addElement('Twitter', 'link', 'footer', 'low', 'Footer', 12, 'Inter');
+      addElement('LinkedIn', 'link', 'footer', 'low', 'Footer', 12, 'Inter');
+      addElement('Instagram', 'link', 'footer', 'low', 'Footer', 12, 'Inter');
 
     } else if (designType === 'mobile') {
-      // Mobile App Elements
-      addElement('Welcome Back!', 'heading', 'header', 'high', 'Login Screen');
-      addElement('Sign in to continue', 'content', 'main', 'medium', 'Login Screen');
-      addElement('Email Address', 'label', 'form', 'medium', 'Login Screen');
-      addElement('Enter your email', 'placeholder', 'form', 'medium', 'Login Screen');
-      addElement('Password', 'label', 'form', 'medium', 'Login Screen');
-      addElement('Enter your password', 'placeholder', 'form', 'medium', 'Login Screen');
-      addElement('Sign In', 'button', 'form', 'high', 'Login Screen');
-      addElement('Forgot Password?', 'link', 'form', 'medium', 'Login Screen');
-      addElement('Dashboard', 'heading', 'header', 'high', 'Home Screen');
-      addElement('Good morning, John!', 'content', 'main', 'high', 'Home Screen');
-      addElement('Quick Actions', 'heading', 'main', 'medium', 'Home Screen');
-      addElement('Create New', 'button', 'main', 'medium', 'Home Screen');
-      addElement('View Reports', 'button', 'main', 'medium', 'Home Screen');
-      addElement('Settings', 'button', 'main', 'medium', 'Home Screen');
-      addElement('Recent Activity', 'heading', 'main', 'medium', 'Home Screen');
-      addElement('You completed 5 tasks today', 'content', 'main', 'medium', 'Home Screen');
-      addElement('Profile', 'navigation', 'navigation', 'medium', 'Bottom Navigation');
-      addElement('Home', 'navigation', 'navigation', 'medium', 'Bottom Navigation');
-      addElement('Messages', 'navigation', 'navigation', 'medium', 'Bottom Navigation');
-      addElement('Notifications', 'navigation', 'navigation', 'medium', 'Bottom Navigation');
+      // Onboarding Screens
+      addElement('Welcome to AppName', 'heading', 'main', 'high', 'Onboarding 1', 28, 'SF Pro Display');
+      addElement('Discover amazing features designed just for you', 'content', 'main', 'medium', 'Onboarding 1', 16, 'SF Pro Text');
+      addElement('Get started with our intuitive interface and powerful tools', 'content', 'main', 'low', 'Onboarding 1', 14, 'SF Pro Text');
+      addElement('Next', 'button', 'main', 'high', 'Onboarding 1', 16, 'SF Pro Display');
+      addElement('Skip', 'button', 'main', 'low', 'Onboarding 1', 14, 'SF Pro Text');
+      
+      addElement('Stay Connected', 'heading', 'main', 'high', 'Onboarding 2', 28, 'SF Pro Display');
+      addElement('Connect with friends and colleagues anywhere, anytime', 'content', 'main', 'medium', 'Onboarding 2', 16, 'SF Pro Text');
+      addElement('Real-time messaging and notifications keep you in the loop', 'content', 'main', 'low', 'Onboarding 2', 14, 'SF Pro Text');
+      addElement('Next', 'button', 'main', 'high', 'Onboarding 2', 16, 'SF Pro Display');
+      addElement('Back', 'button', 'main', 'low', 'Onboarding 2', 14, 'SF Pro Text');
+      
+      addElement('Your Privacy Matters', 'heading', 'main', 'high', 'Onboarding 3', 28, 'SF Pro Display');
+      addElement('We protect your data with industry-leading security', 'content', 'main', 'medium', 'Onboarding 3', 16, 'SF Pro Text');
+      addElement('End-to-end encryption ensures your conversations stay private', 'content', 'main', 'low', 'Onboarding 3', 14, 'SF Pro Text');
+      addElement('Get Started', 'button', 'main', 'high', 'Onboarding 3', 16, 'SF Pro Display');
+      addElement('Back', 'button', 'main', 'low', 'Onboarding 3', 14, 'SF Pro Text');
+
+      // Login/Signup Screens
+      addElement('Welcome Back!', 'heading', 'header', 'high', 'Login Screen', 24, 'SF Pro Display');
+      addElement('Sign in to continue', 'content', 'main', 'medium', 'Login Screen', 16, 'SF Pro Text');
+      addElement('Email Address', 'label', 'form', 'medium', 'Login Screen', 14, 'SF Pro Text');
+      addElement('Enter your email', 'placeholder', 'form', 'medium', 'Login Screen', 16, 'SF Pro Text');
+      addElement('Password', 'label', 'form', 'medium', 'Login Screen', 14, 'SF Pro Text');
+      addElement('Enter your password', 'placeholder', 'form', 'medium', 'Login Screen', 16, 'SF Pro Text');
+      addElement('Sign In', 'button', 'form', 'high', 'Login Screen', 16, 'SF Pro Display');
+      addElement('Forgot Password?', 'link', 'form', 'medium', 'Login Screen', 14, 'SF Pro Text');
+      addElement('Don\'t have an account?', 'content', 'form', 'low', 'Login Screen', 14, 'SF Pro Text');
+      addElement('Sign Up', 'link', 'form', 'medium', 'Login Screen', 14, 'SF Pro Text');
+      addElement('Or continue with', 'content', 'form', 'low', 'Login Screen', 12, 'SF Pro Text');
+      addElement('Google', 'button', 'form', 'medium', 'Login Screen', 14, 'SF Pro Text');
+      addElement('Apple', 'button', 'form', 'medium', 'Login Screen', 14, 'SF Pro Text');
+      addElement('Facebook', 'button', 'form', 'medium', 'Login Screen', 14, 'SF Pro Text');
+      
+      // Sign Up Screen
+      addElement('Create Account', 'heading', 'header', 'high', 'Signup Screen', 24, 'SF Pro Display');
+      addElement('Join thousands of users worldwide', 'content', 'main', 'medium', 'Signup Screen', 16, 'SF Pro Text');
+      addElement('First Name', 'label', 'form', 'medium', 'Signup Screen', 14, 'SF Pro Text');
+      addElement('Enter your first name', 'placeholder', 'form', 'medium', 'Signup Screen', 16, 'SF Pro Text');
+      addElement('Last Name', 'label', 'form', 'medium', 'Signup Screen', 14, 'SF Pro Text');
+      addElement('Enter your last name', 'placeholder', 'form', 'medium', 'Signup Screen', 16, 'SF Pro Text');
+      addElement('Email Address', 'label', 'form', 'medium', 'Signup Screen', 14, 'SF Pro Text');
+      addElement('Enter your email', 'placeholder', 'form', 'medium', 'Signup Screen', 16, 'SF Pro Text');
+      addElement('Password', 'label', 'form', 'medium', 'Signup Screen', 14, 'SF Pro Text');
+      addElement('Create a strong password', 'placeholder', 'form', 'medium', 'Signup Screen', 16, 'SF Pro Text');
+      addElement('Confirm Password', 'label', 'form', 'medium', 'Signup Screen', 14, 'SF Pro Text');
+      addElement('Confirm your password', 'placeholder', 'form', 'medium', 'Signup Screen', 16, 'SF Pro Text');
+      addElement('I agree to the Terms of Service and Privacy Policy', 'content', 'form', 'medium', 'Signup Screen', 12, 'SF Pro Text');
+      addElement('Create Account', 'button', 'form', 'high', 'Signup Screen', 16, 'SF Pro Display');
+      addElement('Already have an account?', 'content', 'form', 'low', 'Signup Screen', 14, 'SF Pro Text');
+      addElement('Sign In', 'link', 'form', 'medium', 'Signup Screen', 14, 'SF Pro Text');
+
+      // Home/Dashboard Screens
+      addElement('Dashboard', 'heading', 'header', 'high', 'Home Screen', 20, 'SF Pro Display');
+      addElement('Search', 'placeholder', 'header', 'medium', 'Home Screen', 16, 'SF Pro Text');
+      addElement('Good morning, John!', 'content', 'main', 'high', 'Home Screen', 18, 'SF Pro Text');
+      addElement('Here\'s what\'s happening today', 'content', 'main', 'medium', 'Home Screen', 14, 'SF Pro Text');
+      
+      addElement('Quick Actions', 'heading', 'main', 'medium', 'Home Screen', 18, 'SF Pro Display');
+      addElement('Create New', 'button', 'main', 'medium', 'Home Screen', 16, 'SF Pro Text');
+      addElement('View Reports', 'button', 'main', 'medium', 'Home Screen', 16, 'SF Pro Text');
+      addElement('Settings', 'button', 'main', 'medium', 'Home Screen', 16, 'SF Pro Text');
+      addElement('Help Center', 'button', 'main', 'low', 'Home Screen', 16, 'SF Pro Text');
+      
+      addElement('Recent Activity', 'heading', 'main', 'medium', 'Home Screen', 18, 'SF Pro Display');
+      addElement('You completed 5 tasks today', 'content', 'main', 'medium', 'Home Screen', 14, 'SF Pro Text');
+      addElement('New message from Sarah', 'content', 'main', 'medium', 'Home Screen', 14, 'SF Pro Text');
+      addElement('Report generated successfully', 'content', 'main', 'medium', 'Home Screen', 14, 'SF Pro Text');
+      addElement('3 new notifications', 'content', 'main', 'medium', 'Home Screen', 14, 'SF Pro Text');
+      addElement('View All', 'link', 'main', 'low', 'Home Screen', 14, 'SF Pro Text');
+      
+      addElement('Statistics', 'heading', 'main', 'medium', 'Home Screen', 18, 'SF Pro Display');
+      addElement('Total Tasks', 'content', 'main', 'medium', 'Home Screen', 12, 'SF Pro Text');
+      addElement('142', 'content', 'main', 'high', 'Home Screen', 24, 'SF Pro Display');
+      addElement('Completed', 'content', 'main', 'medium', 'Home Screen', 12, 'SF Pro Text');
+      addElement('98', 'content', 'main', 'high', 'Home Screen', 24, 'SF Pro Display');
+      addElement('In Progress', 'content', 'main', 'medium', 'Home Screen', 12, 'SF Pro Text');
+      addElement('44', 'content', 'main', 'high', 'Home Screen', 24, 'SF Pro Display');
+
+      // Profile Screen
+      addElement('Profile', 'heading', 'header', 'high', 'Profile Screen', 20, 'SF Pro Display');
+      addElement('Edit', 'button', 'header', 'medium', 'Profile Screen', 16, 'SF Pro Text');
+      addElement('John Smith', 'heading', 'main', 'high', 'Profile Screen', 24, 'SF Pro Display');
+      addElement('Senior Developer', 'content', 'main', 'medium', 'Profile Screen', 16, 'SF Pro Text');
+      addElement('San Francisco, CA', 'content', 'main', 'low', 'Profile Screen', 14, 'SF Pro Text');
+      addElement('Joined March 2023', 'content', 'main', 'low', 'Profile Screen', 12, 'SF Pro Text');
+      
+      addElement('About', 'heading', 'main', 'medium', 'Profile Screen', 18, 'SF Pro Display');
+      addElement('Passionate developer with 5+ years of experience building mobile applications', 'content', 'main', 'medium', 'Profile Screen', 14, 'SF Pro Text');
+      
+      addElement('Contact Information', 'heading', 'main', 'medium', 'Profile Screen', 18, 'SF Pro Display');
+      addElement('Email', 'label', 'main', 'medium', 'Profile Screen', 14, 'SF Pro Text');
+      addElement('john.smith@example.com', 'content', 'main', 'medium', 'Profile Screen', 14, 'SF Pro Text');
+      addElement('Phone', 'label', 'main', 'medium', 'Profile Screen', 14, 'SF Pro Text');
+      addElement('+1 (555) 123-4567', 'content', 'main', 'medium', 'Profile Screen', 14, 'SF Pro Text');
+      
+      addElement('Preferences', 'heading', 'main', 'medium', 'Profile Screen', 18, 'SF Pro Display');
+      addElement('Notifications', 'content', 'main', 'medium', 'Profile Screen', 16, 'SF Pro Text');
+      addElement('Privacy Settings', 'content', 'main', 'medium', 'Profile Screen', 16, 'SF Pro Text');
+      addElement('Dark Mode', 'content', 'main', 'medium', 'Profile Screen', 16, 'SF Pro Text');
+      addElement('Language', 'content', 'main', 'medium', 'Profile Screen', 16, 'SF Pro Text');
+
+      // Messages Screen
+      addElement('Messages', 'heading', 'header', 'high', 'Messages Screen', 20, 'SF Pro Display');
+      addElement('Search messages', 'placeholder', 'header', 'medium', 'Messages Screen', 16, 'SF Pro Text');
+      addElement('New Message', 'button', 'header', 'medium', 'Messages Screen', 14, 'SF Pro Text');
+      
+      addElement('Sarah Wilson', 'content', 'main', 'medium', 'Messages Screen', 16, 'SF Pro Text');
+      addElement('Hey! How\'s the project going?', 'content', 'main', 'medium', 'Messages Screen', 14, 'SF Pro Text');
+      addElement('2m ago', 'content', 'main', 'low', 'Messages Screen', 12, 'SF Pro Text');
+      
+      addElement('Mike Johnson', 'content', 'main', 'medium', 'Messages Screen', 16, 'SF Pro Text');
+      addElement('Can we schedule a meeting tomorrow?', 'content', 'main', 'medium', 'Messages Screen', 14, 'SF Pro Text');
+      addElement('1h ago', 'content', 'main', 'low', 'Messages Screen', 12, 'SF Pro Text');
+      
+      addElement('Team Updates', 'content', 'main', 'medium', 'Messages Screen', 16, 'SF Pro Text');
+      addElement('New release is ready for testing', 'content', 'main', 'medium', 'Messages Screen', 14, 'SF Pro Text');
+      addElement('3h ago', 'content', 'main', 'low', 'Messages Screen', 12, 'SF Pro Text');
+
+      // Settings Screen
+      addElement('Settings', 'heading', 'header', 'high', 'Settings Screen', 20, 'SF Pro Display');
+      
+      addElement('Account', 'heading', 'main', 'medium', 'Settings Screen', 18, 'SF Pro Display');
+      addElement('Edit Profile', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Change Password', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Privacy Settings', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Delete Account', 'content', 'main', 'low', 'Settings Screen', 16, 'SF Pro Text');
+      
+      addElement('Notifications', 'heading', 'main', 'medium', 'Settings Screen', 18, 'SF Pro Display');
+      addElement('Push Notifications', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Email Notifications', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('SMS Notifications', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      
+      addElement('Appearance', 'heading', 'main', 'medium', 'Settings Screen', 18, 'SF Pro Display');
+      addElement('Dark Mode', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Font Size', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Language', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      
+      addElement('Support', 'heading', 'main', 'medium', 'Settings Screen', 18, 'SF Pro Display');
+      addElement('Help Center', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Contact Support', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Report a Bug', 'content', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+      addElement('Terms of Service', 'content', 'main', 'low', 'Settings Screen', 14, 'SF Pro Text');
+      addElement('Privacy Policy', 'content', 'main', 'low', 'Settings Screen', 14, 'SF Pro Text');
+      
+      addElement('About', 'heading', 'main', 'medium', 'Settings Screen', 18, 'SF Pro Display');
+      addElement('Version 2.1.4', 'content', 'main', 'low', 'Settings Screen', 14, 'SF Pro Text');
+      addElement('© 2024 AppName Inc.', 'content', 'main', 'low', 'Settings Screen', 12, 'SF Pro Text');
+      
+      addElement('Sign Out', 'button', 'main', 'medium', 'Settings Screen', 16, 'SF Pro Text');
+
+      // Bottom Navigation
+      addElement('Home', 'navigation', 'navigation', 'high', 'Bottom Navigation', 12, 'SF Pro Text');
+      addElement('Messages', 'navigation', 'navigation', 'medium', 'Bottom Navigation', 12, 'SF Pro Text');
+      addElement('Search', 'navigation', 'navigation', 'medium', 'Bottom Navigation', 12, 'SF Pro Text');
+      addElement('Notifications', 'navigation', 'navigation', 'medium', 'Bottom Navigation', 12, 'SF Pro Text');
+      addElement('Profile', 'navigation', 'navigation', 'medium', 'Bottom Navigation', 12, 'SF Pro Text');
 
     } else if (designType === 'dashboard') {
       // Dashboard/Admin Elements
@@ -352,25 +610,103 @@ export class PrototypeAPIManager {
       addElement('Subscribe', 'button', 'footer', 'medium', 'Footer');
 
     } else {
-      // Generic App Elements
-      addElement('Dashboard', 'heading', 'header', 'high', 'Main Screen');
-      addElement('Welcome to the application', 'content', 'main', 'medium', 'Main Screen');
-      addElement('Get Started', 'button', 'main', 'high', 'Main Screen');
-      addElement('Learn More', 'button', 'main', 'medium', 'Main Screen');
-      addElement('Navigation Menu', 'navigation', 'navigation', 'medium', 'Navigation');
-      addElement('Home', 'navigation', 'navigation', 'medium', 'Navigation');
-      addElement('About', 'navigation', 'navigation', 'medium', 'Navigation');
-      addElement('Contact', 'navigation', 'navigation', 'medium', 'Navigation');
-      addElement('Settings', 'navigation', 'navigation', 'low', 'Navigation');
-      addElement('Main Content Area', 'heading', 'main', 'medium', 'Content');
-      addElement('This is the primary content section where users will interact with the main features.', 'content', 'main', 'medium', 'Content');
-      addElement('Save Changes', 'button', 'main', 'medium', 'Actions');
-      addElement('Cancel', 'button', 'main', 'low', 'Actions');
-      addElement('Help & Support', 'link', 'footer', 'low', 'Footer');
-      addElement('© 2024 Application Name', 'content', 'footer', 'low', 'Footer');
+      // Generic App/SaaS Platform Elements
+      // Header & Navigation
+      addElement('AppName', 'heading', 'header', 'high', 'Header', 20, 'Inter');
+      addElement('Dashboard', 'navigation', 'header', 'high', 'Navigation', 16, 'Inter');
+      addElement('Projects', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Analytics', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Team', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Settings', 'navigation', 'header', 'medium', 'Navigation', 16, 'Inter');
+      addElement('Search everything...', 'placeholder', 'header', 'medium', 'Search', 14, 'Inter');
+      addElement('Notifications', 'button', 'header', 'medium', 'Header', 14, 'Inter');
+      addElement('Profile', 'button', 'header', 'medium', 'Header', 14, 'Inter');
+
+      // Main Dashboard
+      addElement('Welcome back, Sarah!', 'heading', 'main', 'high', 'Dashboard', 24, 'Inter');
+      addElement('Here\'s what\'s happening with your projects today', 'content', 'main', 'medium', 'Dashboard', 16, 'Inter');
+      
+      // Quick Stats
+      addElement('Quick Stats', 'heading', 'main', 'medium', 'Dashboard', 18, 'Inter');
+      addElement('Active Projects', 'content', 'main', 'medium', 'Stats Card', 14, 'Inter');
+      addElement('24', 'content', 'main', 'high', 'Stats Card', 32, 'Inter');
+      addElement('Completed This Month', 'content', 'main', 'medium', 'Stats Card', 14, 'Inter');
+      addElement('156', 'content', 'main', 'high', 'Stats Card', 32, 'Inter');
+      addElement('Team Members', 'content', 'main', 'medium', 'Stats Card', 14, 'Inter');
+      addElement('12', 'content', 'main', 'high', 'Stats Card', 32, 'Inter');
+      addElement('Total Revenue', 'content', 'main', 'medium', 'Stats Card', 14, 'Inter');
+      addElement('$45,230', 'content', 'main', 'high', 'Stats Card', 32, 'Inter');
+
+      // Recent Activity
+      addElement('Recent Activity', 'heading', 'main', 'medium', 'Activity Feed', 18, 'Inter');
+      addElement('John completed "Website Redesign" project', 'content', 'main', 'medium', 'Activity Feed', 14, 'Inter');
+      addElement('2 hours ago', 'content', 'main', 'low', 'Activity Feed', 12, 'Inter');
+      addElement('New team member Sarah joined', 'content', 'main', 'medium', 'Activity Feed', 14, 'Inter');
+      addElement('4 hours ago', 'content', 'main', 'low', 'Activity Feed', 12, 'Inter');
+      addElement('Mobile app design was approved', 'content', 'main', 'medium', 'Activity Feed', 14, 'Inter');
+      addElement('1 day ago', 'content', 'main', 'low', 'Activity Feed', 12, 'Inter');
+      addElement('View All Activity', 'link', 'main', 'low', 'Activity Feed', 14, 'Inter');
+
+      // Projects Section
+      addElement('Your Projects', 'heading', 'main', 'medium', 'Projects', 18, 'Inter');
+      addElement('Create New Project', 'button', 'main', 'high', 'Projects', 16, 'Inter');
+      addElement('Website Redesign', 'heading', 'main', 'medium', 'Project Card', 16, 'Inter');
+      addElement('In Progress', 'content', 'main', 'medium', 'Project Card', 12, 'Inter');
+      addElement('Due in 5 days', 'content', 'main', 'low', 'Project Card', 12, 'Inter');
+      addElement('Mobile App Development', 'heading', 'main', 'medium', 'Project Card', 16, 'Inter');
+      addElement('Review', 'content', 'main', 'medium', 'Project Card', 12, 'Inter');
+      addElement('Due tomorrow', 'content', 'main', 'high', 'Project Card', 12, 'Inter');
+      addElement('Brand Identity', 'heading', 'main', 'medium', 'Project Card', 16, 'Inter');
+      addElement('Completed', 'content', 'main', 'low', 'Project Card', 12, 'Inter');
+      addElement('Finished yesterday', 'content', 'main', 'low', 'Project Card', 12, 'Inter');
+
+      // Team Section
+      addElement('Team Performance', 'heading', 'main', 'medium', 'Team Section', 18, 'Inter');
+      addElement('This Week', 'content', 'main', 'medium', 'Team Section', 14, 'Inter');
+      addElement('Tasks Completed: 47', 'content', 'main', 'medium', 'Team Section', 14, 'Inter');
+      addElement('Average Response Time: 2.3h', 'content', 'main', 'medium', 'Team Section', 14, 'Inter');
+      addElement('Client Satisfaction: 4.8/5', 'content', 'main', 'medium', 'Team Section', 14, 'Inter');
+      addElement('View Team Details', 'link', 'main', 'low', 'Team Section', 14, 'Inter');
+
+      // Quick Actions
+      addElement('Quick Actions', 'heading', 'main', 'medium', 'Quick Actions', 18, 'Inter');
+      addElement('Create Project', 'button', 'main', 'medium', 'Quick Actions', 14, 'Inter');
+      addElement('Invite Team Member', 'button', 'main', 'medium', 'Quick Actions', 14, 'Inter');
+      addElement('Generate Report', 'button', 'main', 'medium', 'Quick Actions', 14, 'Inter');
+      addElement('Export Data', 'button', 'main', 'low', 'Quick Actions', 14, 'Inter');
+      addElement('Schedule Meeting', 'button', 'main', 'low', 'Quick Actions', 14, 'Inter');
+
+      // Notifications Panel
+      addElement('Notifications', 'heading', 'main', 'medium', 'Notifications', 18, 'Inter');
+      addElement('You have 3 new messages', 'content', 'main', 'medium', 'Notifications', 14, 'Inter');
+      addElement('Project deadline approaching', 'content', 'main', 'high', 'Notifications', 14, 'Inter');
+      addElement('Weekly report is ready', 'content', 'main', 'medium', 'Notifications', 14, 'Inter');
+      addElement('New team member request', 'content', 'main', 'medium', 'Notifications', 14, 'Inter');
+      addElement('Mark all as read', 'link', 'main', 'low', 'Notifications', 12, 'Inter');
+
+      // Settings & Account
+      addElement('Account Settings', 'heading', 'main', 'medium', 'Settings', 18, 'Inter');
+      addElement('Profile Information', 'content', 'main', 'medium', 'Settings', 16, 'Inter');
+      addElement('Security & Privacy', 'content', 'main', 'medium', 'Settings', 16, 'Inter');
+      addElement('Billing & Subscription', 'content', 'main', 'medium', 'Settings', 16, 'Inter');
+      addElement('Team Management', 'content', 'main', 'medium', 'Settings', 16, 'Inter');
+      addElement('Integrations', 'content', 'main', 'medium', 'Settings', 16, 'Inter');
+      addElement('API Access', 'content', 'main', 'low', 'Settings', 16, 'Inter');
+
+      // Footer & Support
+      addElement('Need help?', 'content', 'footer', 'medium', 'Footer', 14, 'Inter');
+      addElement('Contact Support', 'link', 'footer', 'medium', 'Footer', 14, 'Inter');
+      addElement('Documentation', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('API Docs', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Community Forum', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('System Status', 'link', 'footer', 'low', 'Footer', 14, 'Inter');
+      addElement('Privacy Policy', 'link', 'footer', 'low', 'Footer', 12, 'Inter');
+      addElement('Terms of Service', 'link', 'footer', 'low', 'Footer', 12, 'Inter');
+      addElement('© 2024 AppName Inc. All rights reserved.', 'content', 'footer', 'low', 'Footer', 12, 'Inter');
     }
 
-    console.log(`Generated ${elements.length} realistic text elements for ${designType} design`);
+    console.log(`🎯 Generated ${elements.length} comprehensive text elements for ${designType} design`);
+    console.log(`📊 Elements include: ${elements.map(e => e.frameName).filter((v, i, a) => a.indexOf(v) === i).length} unique frames/screens`);
     return elements;
   }
 

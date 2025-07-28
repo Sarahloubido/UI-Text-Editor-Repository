@@ -126,8 +126,11 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     <div className="max-w-6xl mx-auto p-8">
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-slate-900 mb-4">Export Spreadsheet</h2>
-        <p className="text-lg text-slate-600 mb-6">
-          Review and export text elements from <span className="font-semibold">{prototype.name}</span>
+        <p className="text-lg text-slate-600 mb-2">
+          Found <strong>{prototype.textElements.length} text elements</strong> from <span className="font-semibold">{prototype.name}</span>
+        </p>
+        <p className="text-slate-600 mb-6">
+          Review and select the text elements you want to export for your writing team
         </p>
         
         {/* Export Controls */}

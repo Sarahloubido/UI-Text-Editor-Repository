@@ -79,13 +79,13 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
         fileName = 'Figma Design';
       }
 
-      console.log('🟢 Step 3: URL imported, ready for text extraction...');
+      console.log('🟢 Step 3: URL imported successfully - NO TEXT ELEMENTS CREATED');
 
-      // Don't create any fake text elements - just prepare for real extraction
+      // NO fake text elements - only real extraction allowed
       const textElements: TextElement[] = [];
       
-      console.log('🟢 Step 4: No text elements created - awaiting real extraction');
-      console.log('🟢 Step 5: Ready for user to choose extraction method');
+      console.log('🟢 Step 4: Zero text elements - real extraction required');
+      console.log('🟢 Step 5: User must use Screenshot+OCR or API extraction');
       
       const source = url.includes('figma.com') ? 'figma' : url.includes('cursor.') ? 'cursor' : 'bolt';
       console.log('🟢 Step 6: Determined source as:', source);

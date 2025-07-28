@@ -507,14 +507,18 @@ function App() {
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-yellow-900 mb-2">Choose Your Text Extraction Method:</h4>
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-red-900 mb-2">⚠️ Real Text Extraction Required</h4>
+                      <p className="text-red-800 mb-4">
+                        Your Figma URL has been imported, but <strong>NO text elements were created</strong>. 
+                        You must extract the real text from your design using one of these methods:
+                      </p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <button
                           onClick={() => setShowScreenshotExtractor(true)}
                           className="flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                          📸 Screenshot + OCR
+                          📸 Screenshot + OCR (Recommended)
                         </button>
                         <button
                           onClick={() => setShowRealExtraction(true)}
@@ -523,10 +527,18 @@ function App() {
                           🔗 API/Manual Entry
                         </button>
                       </div>
-                      <div className="mt-3 text-sm text-yellow-800">
-                        <strong>Screenshot + OCR:</strong> Automatically captures and analyzes your Figma design visually<br/>
-                        <strong>API/Manual:</strong> Use Figma API token or copy-paste text manually
+                      <div className="mt-3 text-sm text-red-800">
+                        <strong>Screenshot + OCR:</strong> Visually captures your Figma design and extracts all visible text automatically<br/>
+                        <strong>API/Manual:</strong> Use your Figma API token or copy-paste text content manually
                       </div>
+                    </div>
+                    
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-semibold text-blue-900 mb-2">🚫 No Fake Text Policy</h4>
+                      <p className="text-blue-800 text-sm">
+                        This app no longer generates mock or fake text. You will only get <strong>real, actual text content</strong> 
+                        from your Figma designs. This ensures 100% accuracy for your content editing workflow.
+                      </p>
                     </div>
                   </div>
 

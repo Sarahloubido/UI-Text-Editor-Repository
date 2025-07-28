@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PrototypeTextExtractor } from '../utils/textExtractor';
 import { CSVParser } from '../utils/csvParser';
+import { DownloadTroubleshooter } from './DownloadTroubleshooter';
 
 export const DebugTest: React.FC = () => {
   const [results, setResults] = useState<string>('');
@@ -88,7 +89,7 @@ export const DebugTest: React.FC = () => {
     );
   };
 
-  const downloadTestCSV = () => {
+  const downloadTestCSV = async () => {
     const testData = [
       {
         id: 'elem_1',
@@ -114,18 +115,41 @@ export const DebugTest: React.FC = () => {
     
     const csv = CSVParser.stringify(testData);
     
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'debug-test.csv');
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    setResults(prev => prev + '\n=== CSV Download Test ===\nDownload initiated!');
+    try {
+      // Enhanced download with multiple fallbacks
+      console.log('Testing download with enhanced method...');
+      
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'debug-test.csv';
+      
+      // Add to document and force click
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up after short delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      setResults(prev => prev + '\n=== CSV Download Test ===\nDownload initiated successfully!');
+      console.log('Download test completed successfully');
+      
+    } catch (error) {
+      console.error('Download test failed:', error);
+      
+      try {
+        // Fallback: Copy to clipboard
+        await navigator.clipboard.writeText(csv);
+        setResults(prev => prev + '\n=== CSV Download Test ===\nDownload failed, but CSV copied to clipboard!');
+      } catch (clipboardError) {
+        setResults(prev => prev + '\n=== CSV Download Test ===\nDownload failed: ' + error.message);
+      }
+    }
   };
 
   const clearResults = () => setResults('');
@@ -133,6 +157,8 @@ export const DebugTest: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-8">
       <h2 className="text-2xl font-bold mb-6">Debug Export Functionality</h2>
+      
+      <DownloadTroubleshooter />
       
       <div className="grid grid-cols-2 gap-4 mb-6">
         <button

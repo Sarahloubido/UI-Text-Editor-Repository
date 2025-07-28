@@ -53,20 +53,61 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
     return CSVParser.stringify(csvData);
   };
 
-  const handleExport = () => {
-    const csvContent = generateCSV();
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${prototype.name}_text_elements.${exportFormat}`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    onExportComplete();
+  const handleExport = async () => {
+    try {
+      const csvContent = generateCSV();
+      console.log('CSV content generated:', csvContent.substring(0, 200) + '...');
+      
+      // Method 1: Modern browser download with better error handling
+      if (navigator.userAgent.includes('Chrome') || navigator.userAgent.includes('Firefox') || navigator.userAgent.includes('Safari')) {
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.${exportFormat}`;
+        
+        // Ensure the link is part of the document
+        document.body.appendChild(link);
+        
+        // Force click event
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+        
+        console.log('Download initiated successfully');
+      } else {
+        // Fallback: Copy to clipboard method
+        await navigator.clipboard.writeText(csvContent);
+        alert('CSV content copied to clipboard! Paste it into a text editor and save as .csv');
+      }
+      
+      onExportComplete();
+    } catch (error) {
+      console.error('Download failed:', error);
+      
+      // Ultimate fallback: Show content in new window
+      try {
+        const csvContent = generateCSV();
+        const newWindow = window.open('');
+        if (newWindow) {
+          newWindow.document.write('<pre>' + csvContent + '</pre>');
+          newWindow.document.title = 'CSV Export - Copy and Save';
+          alert('Download failed. CSV content is displayed in new window. Copy and save manually.');
+        } else {
+          // Last resort: Copy to clipboard
+          await navigator.clipboard.writeText(csvContent);
+          alert('Download failed. CSV content copied to clipboard!');
+        }
+      } catch (fallbackError) {
+        console.error('All download methods failed:', fallbackError);
+        alert('Download failed. Please try again or contact support.');
+      }
+    }
   };
 
   const toggleElementSelection = (elementId: string) => {
@@ -133,6 +174,10 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
               <Download className="w-4 h-4 mr-2" />
               Export {selectedElements.size} Elements
             </button>
+          </div>
+          
+          <div className="mt-2 text-xs text-slate-500">
+            <p>💡 If download doesn't start, the content will be copied to clipboard or shown in a new window</p>
           </div>
         </div>
 

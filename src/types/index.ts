@@ -20,6 +20,7 @@ export interface TextElement {
   nearbyElements?: string[]; // Text of nearby elements for context
   elementRole?: string; // ARIA role or semantic role
   fontSize?: number;
+  fontFamily?: string;
   fontWeight?: string;
   color?: string;
   backgroundColor?: string;

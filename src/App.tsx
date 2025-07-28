@@ -38,13 +38,24 @@ function App() {
   };
 
   const handleImportComplete = (importedPrototype: Prototype) => {
+    console.log('🎯 App.tsx: handleImportComplete called with prototype:', importedPrototype);
     setPrototype(importedPrototype);
     setEditedElements(importedPrototype.textElements);
-    // Extract Figma URL and show real extraction option
-    if (importedPrototype.source?.includes('figma.com')) {
-      setFigmaUrl(importedPrototype.source);
+    
+    // Extract Figma file ID if it's from a Figma URL
+    if (importedPrototype.source === 'figma' && importedPrototype.url) {
+      const fileId = FigmaIntegration.extractFileIdFromUrl(importedPrototype.url);
+      if (fileId) {
+        setFigmaFileId(fileId);
+      }
+      setFigmaUrl(importedPrototype.url);
       setShowRealExtraction(true);
     }
+    
+    // Complete the import step and move to export
+    completeStep('import');
+    setCurrentStep('export');
+    console.log('🎯 App.tsx: Moving to export step');
   };
 
   const handleRealTextExtracted = (realElements: TextElement[]) => {
@@ -65,18 +76,11 @@ function App() {
       
       // Show success message
       alert(`Successfully extracted ${realElements.length} real text elements from your Figma design!`);
+      
+      // Move to export step with real text
+      completeStep('import');
+      setCurrentStep('export');
     }
-    
-    // Extract Figma file ID if it's from a Figma URL
-    if (importedPrototype.source === 'figma' && importedPrototype.url) {
-      const fileId = FigmaIntegration.extractFileIdFromUrl(importedPrototype.url);
-      if (fileId) {
-        setFigmaFileId(fileId);
-      }
-    }
-    
-    completeStep('import');
-    setCurrentStep('export');
   };
 
   const handleExportComplete = (selectedElementIds?: string[]) => {

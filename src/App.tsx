@@ -14,6 +14,7 @@ import { FigmaIntegration } from './utils/figmaIntegration';
 import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
 import { FigmaStructurePreserver } from './utils/figmaStructurePreserver';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
+import { FigmaTextExtraction } from './components/FigmaTextExtraction';
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -29,6 +30,8 @@ function App() {
     updatedPrototype: Prototype;
   } | null>(null);
   const [figmaFileId, setFigmaFileId] = useState<string>('');
+  const [figmaUrl, setFigmaUrl] = useState<string>('');
+  const [showRealExtraction, setShowRealExtraction] = useState<boolean>(false);
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -37,6 +40,32 @@ function App() {
   const handleImportComplete = (importedPrototype: Prototype) => {
     setPrototype(importedPrototype);
     setEditedElements(importedPrototype.textElements);
+    // Extract Figma URL and show real extraction option
+    if (importedPrototype.source?.includes('figma.com')) {
+      setFigmaUrl(importedPrototype.source);
+      setShowRealExtraction(true);
+    }
+  };
+
+  const handleRealTextExtracted = (realElements: TextElement[]) => {
+    if (prototype) {
+      const updatedPrototype: Prototype = {
+        ...prototype,
+        textElements: realElements,
+        extractionMetadata: {
+          ...prototype.extractionMetadata,
+          extractionMethod: 'Real Figma Text',
+          extractedAt: new Date(),
+          confidence: 0.98
+        }
+      };
+      setPrototype(updatedPrototype);
+      setEditedElements(realElements);
+      setShowRealExtraction(false);
+      
+      // Show success message
+      alert(`Successfully extracted ${realElements.length} real text elements from your Figma design!`);
+    }
     
     // Extract Figma file ID if it's from a Figma URL
     if (importedPrototype.source === 'figma' && importedPrototype.url) {
@@ -421,9 +450,33 @@ function App() {
       />
       
       <main className="py-8">
-        {currentStep === 'import' && (
-          <PrototypeImport onImportComplete={handleImportComplete} />
-        )}
+                  {currentStep === 'import' && (
+            <>
+              <PrototypeImport onImportComplete={handleImportComplete} />
+              
+              {showRealExtraction && figmaUrl && (
+                <div className="mt-8">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start">
+                      <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-amber-900 mb-2">Extract Real Text from Your Figma Design</h4>
+                        <p className="text-sm text-amber-800">
+                          The system generated mock text elements. Want to use your actual Figma text instead? 
+                          Use the tool below to extract the real text from your design.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <FigmaTextExtraction 
+                    figmaUrl={figmaUrl}
+                    onTextExtracted={handleRealTextExtracted}
+                  />
+                </div>
+              )}
+            </>
+          )}
         
         {currentStep === 'export' && prototype && (
           <SpreadsheetExport 

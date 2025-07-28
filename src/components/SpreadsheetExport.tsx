@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Download, FileSpreadsheet, Eye, Search } from 'lucide-react';
 import { Prototype, TextElement } from '../types';
 import { CSVParser } from '../utils/csvParser';
+import { CSVDownloadModal } from './CSVDownloadModal';
 
 interface SpreadsheetExportProps {
   prototype: Prototype;
@@ -17,6 +18,8 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
   const [selectedElements, setSelectedElements] = useState<Set<string>>(
     new Set(prototype.textElements.map(el => el.id))
   );
+  const [showCSVModal, setShowCSVModal] = useState(false);
+  const [csvContent, setCsvContent] = useState('');
 
   const filteredElements = prototype.textElements.filter(element =>
     element.originalText.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,169 +62,22 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
   };
 
   const handleExport = () => {
-    const csvContent = generateCSV();
-    console.log('CSV generated, length:', csvContent.length);
+    const content = generateCSV();
+    console.log('CSV generated, length:', content.length);
     
-    if (!csvContent || csvContent.length < 50) {
+    if (!content || content.length < 50) {
       alert('Error: No CSV content generated. Please try importing your prototype again.');
       return;
     }
 
-    // Create a new window with the CSV content
-    const newWindow = window.open('', '_blank');
-    if (newWindow) {
-      newWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>CSV Export - ${prototype.name}</title>
-          <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              padding: 20px; 
-              max-width: 1200px; 
-              margin: 0 auto; 
-            }
-            textarea { 
-              width: 100%; 
-              height: 400px; 
-              font-family: monospace; 
-              font-size: 12px; 
-              border: 1px solid #ccc; 
-              padding: 10px; 
-            }
-            .download-btn {
-              background: #3b82f6;
-              color: white;
-              padding: 12px 24px;
-              border: none;
-              border-radius: 6px;
-              font-size: 16px;
-              cursor: pointer;
-              margin: 10px 10px 10px 0;
-            }
-            .download-btn:hover { background: #2563eb; }
-            .copy-btn {
-              background: #10b981;
-              color: white;
-              padding: 12px 24px;
-              border: none;
-              border-radius: 6px;
-              font-size: 16px;
-              cursor: pointer;
-              margin: 10px 10px 10px 0;
-            }
-            .copy-btn:hover { background: #059669; }
-            .instructions {
-              background: #f3f4f6;
-              padding: 15px;
-              border-radius: 6px;
-              margin-bottom: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>CSV Export Ready</h1>
-          <div class="instructions">
-            <h3>📋 How to save your CSV file:</h3>
-            <ol>
-              <li><strong>Click "Download CSV File"</strong> below (most reliable method)</li>
-              <li><strong>OR</strong> Click "Copy to Clipboard" and paste into Excel/Google Sheets</li>
-              <li><strong>OR</strong> Right-click the text area and copy, then paste into a text editor</li>
-              <li>Save the file with a <strong>.csv</strong> extension</li>
-            </ol>
-          </div>
-          
-          <button class="download-btn" onclick="downloadCSV()" id="downloadBtn">📥 Download CSV File</button>
-          <button class="copy-btn" onclick="copyToClipboard()" id="copyBtn">📋 Copy to Clipboard</button>
-          
-          <div id="status" style="margin: 10px 0; padding: 10px; background: #e5f3ff; border-radius: 4px; display: none;">
-            <strong>Status:</strong> <span id="statusText"></span>
-          </div>
-          
-          <h3>CSV Content:</h3>
-          <textarea id="csvContent" readonly>${csvContent.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</textarea>
-          
-          <script>
-            function showStatus(message, isError = false) {
-              const status = document.getElementById('status');
-              const statusText = document.getElementById('statusText');
-              statusText.textContent = message;
-              status.style.display = 'block';
-              status.style.background = isError ? '#ffebee' : '#e5f3ff';
-            }
-            
-            function downloadCSV() {
-              try {
-                showStatus('Preparing download...');
-                const content = document.getElementById('csvContent').value;
-                console.log('CSV content length:', content.length);
-                
-                if (!content || content.length < 10) {
-                  showStatus('Error: No CSV content found', true);
-                  return;
-                }
-                
-                const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = '${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv';
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-                showStatus('Download started! Check your Downloads folder.');
-              } catch (error) {
-                console.error('Download error:', error);
-                showStatus('Download failed: ' + error.message, true);
-              }
-            }
-            
-            function copyToClipboard() {
-              try {
-                showStatus('Copying to clipboard...');
-                const textarea = document.getElementById('csvContent');
-                textarea.select();
-                
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                  navigator.clipboard.writeText(textarea.value).then(() => {
-                    showStatus('CSV content copied to clipboard! Paste into Excel, Google Sheets, or a text editor and save as .csv');
-                  }).catch(() => {
-                    document.execCommand('copy');
-                    showStatus('CSV content copied to clipboard! Paste into Excel, Google Sheets, or a text editor and save as .csv');
-                  });
-                } else {
-                  document.execCommand('copy');
-                  showStatus('CSV content copied to clipboard! Paste into Excel, Google Sheets, or a text editor and save as .csv');
-                }
-              } catch (error) {
-                showStatus('Copy failed: ' + error.message, true);
-              }
-            }
-            
-            // Auto-select content for easy copying
-            document.getElementById('csvContent').focus();
-          </script>
-        </body>
-        </html>
-      `);
-      
-      console.log('CSV export window opened');
-      onExportComplete();
-    } else {
-      // Pop-up blocked, use clipboard fallback
-      navigator.clipboard.writeText(csvContent).then(() => {
-        alert('Pop-up blocked! CSV content copied to clipboard instead.\\n\\nPaste into a text editor and save as .csv file');
-        onExportComplete();
-      }).catch(() => {
-        // Last resort: show content in alert
-        alert('Here is your CSV content - copy and save as .csv:\\n\\n' + csvContent.substring(0, 500) + '...');
-        console.log('Full CSV Content:', csvContent);
-      });
-    }
+    // Set the CSV content and show the modal
+    setCsvContent(content);
+    setShowCSVModal(true);
+  };
+
+  const handleModalClose = () => {
+    setShowCSVModal(false);
+    onExportComplete();
   };
 
   const toggleElementSelection = (elementId: string) => {
@@ -291,7 +147,7 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
           </div>
           
           <div className="mt-2 text-xs text-slate-500">
-            <p>💡 If download doesn't start, the content will be copied to clipboard or shown in a new window</p>
+            <p>💡 The CSV content will be shown in a modal with download and copy options</p>
           </div>
         </div>
 
@@ -434,6 +290,14 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
           </div>
         </div>
       </div>
+
+      {/* CSV Download Modal */}
+      <CSVDownloadModal
+        isOpen={showCSVModal}
+        onClose={handleModalClose}
+        csvContent={csvContent}
+        fileName={`${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv`}
+      />
     </div>
   );
 };

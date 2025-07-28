@@ -55,7 +55,7 @@ function App() {
       // If no text elements, stay on import step to show extraction options
       if (importedPrototype.textElements.length === 0) {
         console.log('🎯 App.tsx: No text elements found, staying on import to show extraction options');
-        setShowRealExtraction(true); // 🔥 THIS WAS MISSING!
+        // Don't auto-open modal - let user choose first
         completeStep('import');
         return; // Don't move to export yet
       }
@@ -492,7 +492,7 @@ function App() {
             <>
               <PrototypeImport onImportComplete={handleImportComplete} />
               
-              {prototype && prototype.textElements.length === 0 && figmaUrl && (
+              {prototype && prototype.textElements.length === 0 && figmaUrl && !showRealExtraction && !showScreenshotExtractor && (
                 <div className="mt-8">
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                     <div className="flex items-start">
@@ -522,7 +522,10 @@ function App() {
                           📸 Screenshot + OCR (Recommended)
                         </button>
                         <button
-                          onClick={() => setShowRealExtraction(true)}
+                          onClick={() => {
+                            console.log('🔗 API/Manual Entry button clicked');
+                            setShowRealExtraction(true);
+                          }}
                           className="flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                         >
                           🔗 API/Manual Entry

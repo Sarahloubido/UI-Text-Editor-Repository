@@ -211,8 +211,12 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
                 placeholder="https://figma.com/file/... or https://bolt.new/... or any URL"
                 value={url}
                 onChange={(e) => {
-                  setUrl(e.target.value);
-                  setHasImported(false); // Reset when URL changes
+                  const newUrl = e.target.value;
+                  setUrl(newUrl);
+                  // Only reset if URL actually changed to a different value
+                  if (newUrl !== url) {
+                    setHasImported(false);
+                  }
                 }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />

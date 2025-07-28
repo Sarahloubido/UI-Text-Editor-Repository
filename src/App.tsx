@@ -51,10 +51,16 @@ function App() {
         setFigmaFileId(fileId);
       }
       setFigmaUrl(importedPrototype.url);
-      setShowRealExtraction(true);
+      
+      // If no text elements, stay on import step to show extraction options
+      if (importedPrototype.textElements.length === 0) {
+        console.log('🎯 App.tsx: No text elements found, staying on import to show extraction options');
+        completeStep('import');
+        return; // Don't move to export yet
+      }
     }
     
-    // Complete the import step and move to export
+    // Complete the import step and move to export (only if we have text elements)
     completeStep('import');
     setCurrentStep('export');
     console.log('🎯 App.tsx: Moving to export step');

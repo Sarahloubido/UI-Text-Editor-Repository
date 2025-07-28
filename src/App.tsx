@@ -12,7 +12,7 @@ import { CheckCircle, Rocket, Download, FileText, AlertCircle } from 'lucide-rea
 import { PrototypeGenerator } from './utils/prototypeGenerator';
 import { FigmaIntegration } from './utils/figmaIntegration';
 import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
-import { FigmaCompatibleGenerator } from './utils/figmaCompatibleGenerator';
+import { FigmaStructurePreserver } from './utils/figmaStructurePreserver';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
 
 function App() {
@@ -174,12 +174,12 @@ function App() {
       return;
     }
 
-    // Download Figma-compatible import files
-    FigmaCompatibleGenerator.downloadFigmaCompatibleFiles(prototype, updatedElements);
+    // Download structure-preserving import files
+    FigmaStructurePreserver.downloadPreservedFiles(prototype, updatedElements);
     
     // Show instructions
     setTimeout(() => {
-      alert(FigmaCompatibleGenerator.getFigmaImportInstructions());
+      alert(FigmaStructurePreserver.getPreservationInstructions());
     }, 2000);
   };
 
@@ -306,9 +306,9 @@ function App() {
                     <div className="flex items-start space-x-2 mb-3">
                       <CheckCircle className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
                       <div>
-                                               <h4 className="font-medium text-purple-900 mb-1">Method 2: Import Compatible Files</h4>
+                                               <h4 className="font-medium text-purple-900 mb-1">Method 2: Preserve Design Structure</h4>
                        <p className="text-purple-800 text-sm mb-3">
-                         Download files that Figma can actually import (SVG, HTML) with your updated text applied.
+                         Download files that recreate your original design structure with text changes applied. Maintains layout, styling, and visual hierarchy.
                        </p>
                      </div>
                    </div>
@@ -316,11 +316,11 @@ function App() {
                    <div className="space-y-2 text-sm text-slate-700 mb-4">
                      <h5 className="font-medium">How it works:</h5>
                      <ul className="list-disc list-inside space-y-1 ml-4">
-                       <li>Downloads SVG, HTML, and JSON files</li>
-                       <li>Use File → Import in Figma (SVG)</li>
-                       <li>Or use HTML import plugins</li>
-                       <li>Text changes are already applied</li>
-                       <li>Maintains original design layout</li>
+                       <li>Recreates your original frame structure</li>
+                       <li>Preserves mobile/desktop layouts</li>
+                       <li>Includes status bars and UI elements</li>
+                       <li>Maintains proper typography and spacing</li>
+                       <li>Import via File → Import (SVG) in Figma</li>
                      </ul>
                    </div>
 
@@ -333,7 +333,7 @@ function App() {
                        <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
                        <circle cx="15.332" cy="12" r="3.332"/>
                      </svg>
-                     Download Figma-Compatible Files
+                     Download Preserved Design
                    </button>
                   </div>
                 </div>
@@ -341,7 +341,7 @@ function App() {
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
                     <strong>💡 Recommendation:</strong> Use Method 1 (Edit Plugin) for quick text updates to existing files. 
-                    Use Method 2 (Import Files) when you want to create a new Figma file with your updated design that you can import directly using File → Import.
+                    Use Method 2 (Preserve Design) when you need to recreate your design structure with better visual fidelity and proper layout preservation.
                   </p>
                 </div>
                 

@@ -12,7 +12,7 @@ import { CheckCircle, Rocket, Download, FileText, AlertCircle } from 'lucide-rea
 import { PrototypeGenerator } from './utils/prototypeGenerator';
 import { FigmaIntegration } from './utils/figmaIntegration';
 import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
-import { FigmaImportGenerator } from './utils/figmaImportGenerator';
+import { FigmaCompatibleGenerator } from './utils/figmaCompatibleGenerator';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
 
 function App() {
@@ -166,7 +166,7 @@ function App() {
     // Get the elements with changes applied
     const updatedElements = editedElements.map(el => ({
       ...el,
-      originalText: el.editedText || el.originalText // Use edited text as the "original" for import
+      editedText: el.editedText // Keep the edited text separate for comparison
     }));
 
     if (updatedElements.length === 0) {
@@ -174,15 +174,12 @@ function App() {
       return;
     }
 
-    // Create updated prototype for import
-    const updatedPrototype = { ...prototype, textElements: updatedElements };
-
     // Download Figma-compatible import files
-    FigmaImportGenerator.downloadFigmaFiles(updatedPrototype, updatedElements);
+    FigmaCompatibleGenerator.downloadFigmaCompatibleFiles(prototype, updatedElements);
     
     // Show instructions
     setTimeout(() => {
-      alert(FigmaImportGenerator.getFigmaImportInstructions());
+      alert(FigmaCompatibleGenerator.getFigmaImportInstructions());
     }, 2000);
   };
 
@@ -309,41 +306,42 @@ function App() {
                     <div className="flex items-start space-x-2 mb-3">
                       <CheckCircle className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
                       <div>
-                        <h4 className="font-medium text-purple-900 mb-1">Method 2: Import New Design</h4>
-                        <p className="text-purple-800 text-sm mb-3">
-                          Create a new Figma file with your updated text. Perfect for new versions or iterations.
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2 text-sm text-slate-700 mb-4">
-                      <h5 className="font-medium">How it works:</h5>
-                      <ul className="list-disc list-inside space-y-1 ml-4">
-                        <li>Downloads Figma-compatible files</li>
-                        <li>Use File → Import in Figma</li>
-                        <li>Creates new frames with updated text</li>
-                        <li>Continue designing normally</li>
-                      </ul>
-                    </div>
+                                               <h4 className="font-medium text-purple-900 mb-1">Method 2: Import Compatible Files</h4>
+                       <p className="text-purple-800 text-sm mb-3">
+                         Download files that Figma can actually import (SVG, HTML) with your updated text applied.
+                       </p>
+                     </div>
+                   </div>
+                   
+                   <div className="space-y-2 text-sm text-slate-700 mb-4">
+                     <h5 className="font-medium">How it works:</h5>
+                     <ul className="list-disc list-inside space-y-1 ml-4">
+                       <li>Downloads SVG, HTML, and JSON files</li>
+                       <li>Use File → Import in Figma (SVG)</li>
+                       <li>Or use HTML import plugins</li>
+                       <li>Text changes are already applied</li>
+                       <li>Maintains original design layout</li>
+                     </ul>
+                   </div>
 
-                    <button
-                      onClick={handleGenerateFigmaImport}
-                      disabled={!generatedFiles}
-                      className="w-full inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
-                    >
-                      <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
-                        <circle cx="15.332" cy="12" r="3.332"/>
-                      </svg>
-                      Download Import Files
-                    </button>
+                   <button
+                     onClick={handleGenerateFigmaImport}
+                     disabled={!generatedFiles}
+                     className="w-full inline-flex items-center justify-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
+                   >
+                     <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                       <path d="M15.332 8.668a3.333 3.333 0 0 0 0-6.663H8.668a3.333 3.333 0 0 0 0 6.663 3.333 3.333 0 0 0 0 6.665 3.333 3.333 0 0 0 0 6.664A3.334 3.334 0 0 0 12 18.664V8.668h3.332z"/>
+                       <circle cx="15.332" cy="12" r="3.332"/>
+                     </svg>
+                     Download Figma-Compatible Files
+                   </button>
                   </div>
                 </div>
                 
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800">
                     <strong>💡 Recommendation:</strong> Use Method 1 (Edit Plugin) for quick text updates to existing files. 
-                    Use Method 2 (Import Files) when creating new versions or major iterations of your design.
+                    Use Method 2 (Import Files) when you want to create a new Figma file with your updated design that you can import directly using File → Import.
                   </p>
                 </div>
                 

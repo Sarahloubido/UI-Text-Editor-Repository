@@ -13,6 +13,7 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
   const [isProcessing, setIsProcessing] = useState(false);
   const [url, setUrl] = useState('');
   const [extractor] = useState(() => new PrototypeTextExtractor());
+  const [hasImported, setHasImported] = useState(false);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -47,8 +48,13 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
   // COMPLETELY DIRECT URL import - bypasses ALL extraction code
   const handleUrlImport = useCallback(async () => {
     if (!url.trim()) return;
+    if (isProcessing || hasImported) {
+      console.log('🛑 PREVENTED: Already processing or imported');
+      return;
+    }
 
     console.log('🟢 COMPLETELY DIRECT import - NO extraction chains:', url);
+    setHasImported(true);
     setIsProcessing(true);
     
     try {
@@ -245,9 +251,10 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
       console.error('🔴 Error message:', error instanceof Error ? error.message : String(error));
       
       setIsProcessing(false);
+      setHasImported(false); // Reset on error so user can try again
       alert(`Import failed: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }, [url, onImportComplete]);
+  }, [url, onImportComplete, isProcessing, hasImported]);
 
 
 
@@ -336,16 +343,19 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
                 type="url"
                 placeholder="https://figma.com/file/... or https://bolt.new/... or any URL"
                 value={url}
-                onChange={(e) => setUrl(e.target.value)}
+                onChange={(e) => {
+                  setUrl(e.target.value);
+                  setHasImported(false); // Reset when URL changes
+                }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
                 onClick={handleUrlImport}
-                disabled={!url.trim()}
+                disabled={!url.trim() || isProcessing || hasImported}
                 className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4 mr-2" />
-                Import from URL
+                {hasImported ? 'Import Complete' : 'Import from URL'}
               </button>
             </div>
           )}

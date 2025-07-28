@@ -6,6 +6,7 @@ import { SpreadsheetExport } from './components/SpreadsheetExport';
 import { SpreadsheetEditor } from './components/SpreadsheetEditor';
 import { DiffViewer } from './components/DiffViewer';
 import { DebugTest } from './components/DebugTest';
+import { ProductionStatus } from './components/ProductionStatus';
 import { Prototype, WorkflowStep, TextElement, DiffItem } from './types';
 import { CheckCircle, Rocket } from 'lucide-react';
 
@@ -161,8 +162,10 @@ function App() {
     <div className="min-h-screen bg-slate-50">
       <Header currentStep={getStepNumber(currentStep).toString()} totalSteps={5} />
       
-      {/* Debug Toggle */}
+      {/* Production Status & Debug */}
       <div className="max-w-4xl mx-auto px-8 pt-4">
+        <ProductionStatus />
+        
         <button
           onClick={() => setShowDebug(!showDebug)}
           className="mb-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"

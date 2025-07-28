@@ -4,6 +4,7 @@ import { Prototype, TextElement } from '../types';
 import { CSVParser } from '../utils/csvParser';
 import { CSVDownloadModal } from './CSVDownloadModal';
 import { ScreenshotGenerator } from '../utils/screenshotGenerator';
+import { ImageModal } from './ImageModal';
 
 interface SpreadsheetExportProps {
   prototype: Prototype;
@@ -24,6 +25,15 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
   const [editMode, setEditMode] = useState<'download' | 'inline'>('download');
   const [elementPreviews, setElementPreviews] = useState<{ [key: string]: string }>({});
   const [previewsLoaded, setPreviewsLoaded] = useState(false);
+  const [selectedImageModal, setSelectedImageModal] = useState<{
+    isOpen: boolean;
+    imageSrc: string;
+    element: TextElement | null;
+  }>({
+    isOpen: false,
+    imageSrc: '',
+    element: null
+  });
 
   const filteredElements = prototype.textElements.filter(element =>
     element.originalText.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -44,6 +54,25 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
 
     generatePreviews();
   }, [prototype.textElements, prototype.name]);
+
+  const handleImageClick = (element: TextElement) => {
+    const imageSrc = elementPreviews[element.id];
+    if (imageSrc) {
+      setSelectedImageModal({
+        isOpen: true,
+        imageSrc,
+        element
+      });
+    }
+  };
+
+  const closeImageModal = () => {
+    setSelectedImageModal({
+      isOpen: false,
+      imageSrc: '',
+      element: null
+    });
+  };
 
   const generateCSV = () => {
     const selectedTextElements = prototype.textElements.filter(el => 
@@ -297,7 +326,10 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
                     className="text-blue-600"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Visual Context</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">
+                  Visual Context
+                  <span className="ml-1 text-blue-500" title="Click to expand">🔍</span>
+                </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Text Content</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Location</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">Component Details</th>
@@ -314,25 +346,38 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
                       className="text-blue-600"
                     />
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="w-24 h-16 rounded overflow-hidden bg-slate-100 border border-slate-200">
-                      {previewsLoaded && elementPreviews[element.id] ? (
+                                  <td className="px-4 py-4">
+                  <div className="w-24 h-16 rounded overflow-hidden bg-slate-100 border border-slate-200 hover:border-blue-300 transition-colors">
+                    {previewsLoaded && elementPreviews[element.id] ? (
+                      <button
+                        onClick={() => handleImageClick(element)}
+                        className="w-full h-full p-0 border-0 bg-transparent cursor-pointer hover:opacity-80 transition-opacity group relative"
+                        title="Click to expand image"
+                      >
                         <img
                           src={elementPreviews[element.id]}
                           alt={`Visual context for "${element.originalText}"`}
                           className="w-full h-full object-cover"
-                          title={`${element.componentType} in ${element.frameName} (${element.screenSection})`}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-slate-200">
-                          <div className="text-xs text-slate-500 text-center p-1">
-                            <div className="font-medium">{element.componentType}</div>
-                            <div className="text-[10px]">{element.screenSection}</div>
+                        {/* Hover overlay */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                            </svg>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  </td>
+                      </button>
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                        <div className="text-xs text-slate-500 text-center p-1">
+                          <div className="font-medium">{element.componentType}</div>
+                          <div className="text-[10px]">{element.screenSection}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </td>
                   <td className="px-4 py-4">
                     <div className="max-w-xs">
                       <p className="text-sm font-medium text-slate-900 line-clamp-2">
@@ -436,6 +481,20 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
         csvContent={csvContent}
         fileName={`${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.csv`}
       />
+
+      {/* Image Expansion Modal */}
+      {selectedImageModal.isOpen && selectedImageModal.element && (
+        <ImageModal
+          isOpen={selectedImageModal.isOpen}
+          onClose={closeImageModal}
+          imageSrc={selectedImageModal.imageSrc}
+          imageAlt={`Visual context for "${selectedImageModal.element.originalText}"`}
+          elementText={selectedImageModal.element.originalText}
+          frameName={selectedImageModal.element.frameName}
+          componentType={selectedImageModal.element.componentType}
+          screenSection={selectedImageModal.element.screenSection}
+        />
+      )}
     </div>
   );
 };

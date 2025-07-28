@@ -29,6 +29,15 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
       selectedElements.has(el.id)
     );
     
+    console.log('Total elements:', prototype.textElements.length);
+    console.log('Selected elements:', selectedElements.size);
+    console.log('Filtered selected elements:', selectedTextElements.length);
+    
+    if (selectedTextElements.length === 0) {
+      console.warn('No elements selected for export');
+      return '';
+    }
+    
     const csvData = selectedTextElements.map(element => ({
       id: element.id,
       original_text: element.originalText,
@@ -50,147 +59,55 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
       image: element.image || ''
     }));
 
-    return CSVParser.stringify(csvData);
+    const csvContent = CSVParser.stringify(csvData);
+    console.log('CSV content sample:', csvContent.substring(0, 200));
+    return csvContent;
   };
 
   const handleExport = () => {
-    console.log('🔄 Starting CSV export...');
-    
     try {
       const csvContent = generateCSV();
-      console.log('✅ CSV content generated, length:', csvContent.length);
-      console.log('📄 CSV preview:', csvContent.substring(0, 200) + '...');
+      console.log('CSV generated, length:', csvContent.length);
       
-      // Create filename
-      const filename = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.${exportFormat}`;
-      console.log('📁 Filename:', filename);
-      
-      // Try multiple download methods
-      if (downloadFile(csvContent, filename)) {
-        console.log('✅ Download initiated successfully');
-        onExportComplete();
-      } else {
-        throw new Error('All download methods failed');
+      if (!csvContent || csvContent.length < 50) {
+        alert('Error: No CSV content generated. Please try importing your prototype again.');
+        return;
       }
       
-    } catch (error) {
-      console.error('❌ Download failed:', error);
-      handleDownloadFallback();
-    }
-  };
-
-  const downloadFile = (content: string, filename: string): boolean => {
-    try {
-      // Method 1: Standard download
-      console.log('🔄 Trying Method 1: Standard blob download');
-      const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+      // Simple download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
+      const filename = `${prototype.name.replace(/[^a-zA-Z0-9]/g, '_')}_text_elements.${exportFormat}`;
       
       const link = document.createElement('a');
       link.href = url;
       link.download = filename;
       link.style.display = 'none';
       
-      // Add to DOM, click, remove
       document.body.appendChild(link);
-      console.log('🖱️ Clicking download link...');
       link.click();
       document.body.removeChild(link);
       
       // Cleanup
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      return true;
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      
+      console.log('Download initiated for file:', filename);
+      onExportComplete();
       
     } catch (error) {
-      console.error('Method 1 failed:', error);
+      console.error('Export failed:', error);
       
+      // Fallback: copy to clipboard
       try {
-        // Method 2: Force download with event
-        console.log('🔄 Trying Method 2: Forced click event');
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        
-        // Force click with event
-        const clickEvent = new MouseEvent('click', {
-          view: window,
-          bubbles: true,
-          cancelable: false
+        const csvContent = generateCSV();
+        navigator.clipboard.writeText(csvContent).then(() => {
+          alert('Download failed, but CSV content copied to clipboard!\n\nPaste into a text editor and save as .csv file');
         });
-        
-        document.body.appendChild(link);
-        link.dispatchEvent(clickEvent);
-        document.body.removeChild(link);
-        
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        return true;
-        
-      } catch (error2) {
-        console.error('Method 2 failed:', error2);
-        return false;
+      } catch (clipboardError) {
+        alert('Export failed. Please check the console for CSV content.');
+        console.log('CSV Content:', generateCSV());
       }
     }
-  };
-
-  const handleDownloadFallback = () => {
-    const csvContent = generateCSV();
-    console.log('🔄 Using fallback methods...');
-    
-    // Try clipboard first
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(csvContent)
-        .then(() => {
-          console.log('✅ Content copied to clipboard');
-          alert('📋 CSV content copied to clipboard!\n\nPaste it into a text editor (like Notepad) and save as .csv file');
-        })
-        .catch(() => {
-          showManualCopyDialog(csvContent);
-        });
-    } else {
-      showManualCopyDialog(csvContent);
-    }
-  };
-
-  const showManualCopyDialog = (csvContent: string) => {
-    // Create a modal-like dialog with the CSV content
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-      background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
-      align-items: center; justify-content: center;
-    `;
-    
-    const content = document.createElement('div');
-    content.style.cssText = `
-      background: white; padding: 20px; border-radius: 8px; 
-      max-width: 80%; max-height: 80%; overflow: auto;
-    `;
-    
-    content.innerHTML = `
-      <h3 style="margin-top: 0;">CSV Export Content</h3>
-      <p>Copy the content below and save it as a .csv file:</p>
-      <textarea style="width: 100%; height: 300px; font-family: monospace; font-size: 12px;">${csvContent}</textarea>
-      <div style="margin-top: 10px;">
-        <button onclick="navigator.clipboard?.writeText(\`${csvContent.replace(/`/g, '\\`')}\`).then(() => alert('Copied!'))" 
-                style="margin-right: 10px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px;">
-          Copy to Clipboard
-        </button>
-        <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" 
-                style="padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px;">
-          Close
-        </button>
-      </div>
-    `;
-    
-    modal.appendChild(content);
-    document.body.appendChild(modal);
-    
-    // Select the textarea content
-    const textarea = content.querySelector('textarea') as HTMLTextAreaElement;
-    textarea.select();
   };
 
   const toggleElementSelection = (elementId: string) => {
@@ -249,35 +166,14 @@ export const SpreadsheetExport: React.FC<SpreadsheetExportProps> = ({
               </div>
             </div>
             
-            <div className="flex gap-2">
-              <button
-                onClick={handleExport}
-                disabled={selectedElements.size === 0}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export {selectedElements.size} Elements
-              </button>
-              
-              <button
-                onClick={() => {
-                  const csvContent = generateCSV();
-                  console.log('🧪 Test CSV content:', csvContent.substring(0, 100));
-                  const blob = new Blob(['id,text\ntest1,Hello World'], { type: 'text/csv' });
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = 'test.csv';
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                  URL.revokeObjectURL(url);
-                }}
-                className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
-              >
-                Test Download
-              </button>
-            </div>
+            <button
+              onClick={handleExport}
+              disabled={selectedElements.size === 0}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export {selectedElements.size} Elements
+            </button>
           </div>
           
           <div className="mt-2 text-xs text-slate-500">

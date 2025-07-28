@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Copy, Upload, Download, ExternalLink, AlertCircle, CheckCircle, FileText } from 'lucide-react';
+import { Copy, Upload, Download, ExternalLink, AlertCircle, CheckCircle, FileText, Key } from 'lucide-react';
 import { TextElement } from '../types';
+import { FigmaAuthModal } from './FigmaAuthModal';
 
 interface FigmaTextExtractionProps {
   onTextExtracted: (elements: TextElement[]) => void;
@@ -13,11 +14,12 @@ export const FigmaTextExtraction: React.FC<FigmaTextExtractionProps> = ({
   figmaUrl,
   onClose
 }) => {
-  const [method, setMethod] = useState<'paste' | 'api' | 'manual'>('paste');
+  const [method, setMethod] = useState<'paste' | 'api' | 'manual'>('api');
   const [pastedData, setPastedData] = useState('');
   const [apiToken, setApiToken] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [extractedCount, setExtractedCount] = useState(0);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Extract Figma file ID from URL
   const extractFileId = (url: string): string | null => {
@@ -271,12 +273,12 @@ The app will automatically parse all the text and organize it for editing.
                 : 'border-slate-200 hover:border-slate-300'
             }`}
           >
-            <ExternalLink className="w-5 h-5 text-blue-600 mb-2" />
-            <h4 className="font-medium text-slate-900 mb-1">Figma API</h4>
-            <p className="text-sm text-slate-600">Use your personal access token</p>
+            <Key className="w-5 h-5 text-blue-600 mb-2" />
+            <h4 className="font-medium text-slate-900 mb-1">Figma API (Recommended)</h4>
+            <p className="text-sm text-slate-600">Authenticate and extract real text</p>
             <div className="mt-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                ✓ Most Accurate
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                ✓ Real Text
               </span>
             </div>
           </button>
@@ -351,54 +353,33 @@ The app will automatically parse all the text and organize it for editing.
         </div>
       )}
 
-      {/* Method 2: API Interface */}
+      {/* Method 2: API Authentication */}
       {method === 'api' && (
         <div className="space-y-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start">
-              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 mr-3 flex-shrink-0" />
+              <Key className="w-5 h-5 text-green-600 mt-0.5 mr-3 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-amber-900 mb-2">Get your Figma personal access token:</h4>
-                <ol className="list-decimal list-inside space-y-1 text-sm text-amber-800">
-                  <li>Go to Figma → Settings → Personal access tokens</li>
-                  <li>Click "Create a new personal access token"</li>
-                  <li>Give it a name and copy the token</li>
-                  <li>Paste it below (it stays in your browser)</li>
-                </ol>
-                <a
-                  href="https://www.figma.com/settings"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center text-sm text-amber-600 hover:text-amber-700 underline"
-                >
-                  Open Figma Settings <ExternalLink className="w-3 h-3 ml-1" />
-                </a>
+                <h4 className="font-medium text-green-900 mb-2">Authenticate with Figma</h4>
+                <p className="text-sm text-green-800 mb-3">
+                  Connect directly to Figma using your account to extract real text from your designs.
+                  Multiple authentication options available including enterprise support for Pendo users.
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-green-800">
+                  <li><strong>Personal Token:</strong> Most reliable, works everywhere</li>
+                  <li><strong>OAuth:</strong> Browser-based authentication, no token needed</li>
+                  <li><strong>Enterprise:</strong> Pendo network integration (SSO)</li>
+                </ul>
               </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Figma Personal Access Token:
-            </label>
-            <input
-              type="password"
-              value={apiToken}
-              onChange={(e) => setApiToken(e.target.value)}
-              placeholder="figd_..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              Your token is stored locally and never sent to our servers
-            </p>
-          </div>
-
           <button
-            onClick={handleApiMethod}
-            disabled={!apiToken.trim() || isProcessing}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            onClick={() => setShowAuthModal(true)}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center"
           >
-            {isProcessing ? 'Extracting from API...' : 'Extract via Figma API'}
+            <Key className="w-4 h-4 mr-2" />
+            Authenticate with Figma
           </button>
         </div>
       )}
@@ -459,6 +440,18 @@ Contact`}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Authentication Modal */}
+      {showAuthModal && (
+        <FigmaAuthModal
+          figmaUrl={figmaUrl}
+          onTextExtracted={(elements) => {
+            onTextExtracted(elements);
+            setShowAuthModal(false);
+          }}
+          onClose={() => setShowAuthModal(false)}
+        />
       )}
         </div>
       </div>

@@ -38,7 +38,9 @@ function App() {
   };
 
   const handleImportComplete = (importedPrototype: Prototype) => {
-    console.log('🎯 App.tsx: handleImportComplete called with prototype:', importedPrototype);
+    console.log('🔥 NEW CODE LOADED - App.tsx: handleImportComplete called with prototype:', importedPrototype);
+    
+    // Force state updates in sequence to ensure re-renders
     setPrototype(importedPrototype);
     setEditedElements(importedPrototype.textElements);
     
@@ -48,18 +50,20 @@ function App() {
       if (fileId) {
         setFigmaFileId(fileId);
       }
+      
+      // Set figmaUrl and force re-render
       setFigmaUrl(importedPrototype.url);
-      console.log('🎯 App.tsx: Set figmaUrl to:', importedPrototype.url);
+      console.log('🔥 NEW CODE: Set figmaUrl to:', importedPrototype.url);
       
       // If no text elements, stay on import step to show extraction options
       if (importedPrototype.textElements.length === 0) {
-        console.log('🎯 App.tsx: No text elements found, staying on import to show extraction options');
-        console.log('🎯 App.tsx: Current state will be:', {
-          prototype: importedPrototype,
-          figmaUrl: importedPrototype.url,
-          showSimpleEntry: showSimpleEntry
-        });
-        // Don't auto-open modal - let user choose first
+        console.log('🔥 NEW CODE: No text elements found, staying on import to show extraction options');
+        
+        // Force a small delay to ensure all state updates complete
+        setTimeout(() => {
+          console.log('🔥 NEW CODE: State should now be updated, checking UI condition...');
+        }, 100);
+        
         completeStep('import');
         return; // Don't move to export yet
       }
@@ -68,7 +72,7 @@ function App() {
     // Complete the import step and move to export (only if we have text elements)
     completeStep('import');
     setCurrentStep('export');
-    console.log('🎯 App.tsx: Moving to export step');
+    console.log('🔥 NEW CODE: Moving to export step');
   };
 
   const handleSimpleTextExtracted = (textElements: TextElement[]) => {
@@ -469,14 +473,16 @@ function App() {
               <PrototypeImport onImportComplete={handleImportComplete} />
               
               {(() => {
-                console.log('🔍 Debug UI condition:', {
+                const shouldShow = prototype && prototype.textElements.length === 0 && figmaUrl && !showSimpleEntry;
+                console.log('🔥 NEW CODE UI CONDITION CHECK:', {
                   hasPrototype: !!prototype,
                   textElementsLength: prototype?.textElements?.length,
                   hasFigmaUrl: !!figmaUrl,
+                  figmaUrlValue: figmaUrl,
                   showSimpleEntry: showSimpleEntry,
-                  shouldShow: prototype && prototype.textElements.length === 0 && figmaUrl && !showSimpleEntry
+                  shouldShow: shouldShow
                 });
-                return prototype && prototype.textElements.length === 0 && figmaUrl && !showSimpleEntry;
+                return shouldShow;
               })() && (
                 <div className="mt-8">
                                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

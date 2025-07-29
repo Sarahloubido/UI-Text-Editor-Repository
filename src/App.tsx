@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { WorkflowNavigation } from './components/WorkflowNavigation';
 import { PrototypeImport } from './components/PrototypeImport';
 import { SpreadsheetExport } from './components/SpreadsheetExport';
 import { SpreadsheetEditor } from './components/SpreadsheetEditor';
 import { DiffViewer } from './components/DiffViewer';
+import { Dashboard } from './components/Dashboard';
 
 import { ProductionStatus } from './components/ProductionStatus';
 import { Prototype, WorkflowStep, TextElement, DiffItem } from './types';
@@ -17,6 +18,7 @@ import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
 
 
 function App() {
+  const [currentRoute, setCurrentRoute] = useState<string>('/');
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
   const [completedSteps, setCompletedSteps] = useState<Set<WorkflowStep>>(new Set());
   const [prototype, setPrototype] = useState<Prototype | null>(null);
@@ -31,6 +33,20 @@ function App() {
   } | null>(null);
   const [figmaFileId, setFigmaFileId] = useState<string>('');
   const [figmaUrl, setFigmaUrl] = useState<string>('');
+
+  // Simple routing
+  useEffect(() => {
+    const path = window.location.pathname;
+    setCurrentRoute(path);
+    
+    // Listen for navigation changes
+    const handlePopState = () => {
+      setCurrentRoute(window.location.pathname);
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
 
   const completeStep = (step: WorkflowStep) => {
@@ -410,6 +426,11 @@ function App() {
         </div>
       </div>
     );
+  }
+
+  // Route to Dashboard for Figma OAuth
+  if (currentRoute === '/dashboard') {
+    return <Dashboard />;
   }
 
   return (

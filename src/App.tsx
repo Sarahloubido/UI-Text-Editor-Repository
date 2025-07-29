@@ -472,18 +472,8 @@ function App() {
             <>
               <PrototypeImport onImportComplete={handleImportComplete} />
               
-              {(() => {
-                const shouldShow = prototype && prototype.textElements.length === 0 && figmaUrl && !showSimpleEntry;
-                console.log('🔥 NEW CODE UI CONDITION CHECK:', {
-                  hasPrototype: !!prototype,
-                  textElementsLength: prototype?.textElements?.length,
-                  hasFigmaUrl: !!figmaUrl,
-                  figmaUrlValue: figmaUrl,
-                  showSimpleEntry: showSimpleEntry,
-                  shouldShow: shouldShow
-                });
-                return shouldShow;
-              })() && (
+              {/* ALWAYS SHOW FOR TESTING */}
+              {currentStep === 'import' && (
                 <div className="mt-8">
                                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                       <div className="flex items-start">
@@ -508,12 +498,12 @@ function App() {
                       <div className="text-center">
                         <button
                           onClick={() => {
-                            console.log('📝 Add Text Content button clicked');
+                            console.log('🚀 TEST BUTTON CLICKED - Opening SimpleTextEntry modal');
                             setShowSimpleEntry(true);
                           }}
-                          className="inline-flex items-center justify-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                          className="inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
                         >
-                          📝 Add Text Content
+                          🚀 TEST: Add Text Content
                         </button>
                       </div>
                       <div className="mt-3 text-sm text-green-800 text-center">
@@ -530,13 +520,21 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Simple Text Entry Component */}
+                  {/* Simple Text Entry Component - TESTING */}
                   {showSimpleEntry && (
-                    <SimpleTextEntry 
-                      figmaUrl={figmaUrl}
-                      onTextExtracted={handleSimpleTextExtracted}
-                      onClose={() => setShowSimpleEntry(false)}
-                    />
+                    <>
+                      <div style={{ position: 'fixed', top: '10px', left: '10px', background: 'red', color: 'white', padding: '10px', zIndex: 9999 }}>
+                        🚀 MODAL SHOULD BE OPEN (showSimpleEntry: {showSimpleEntry.toString()})
+                      </div>
+                      <SimpleTextEntry 
+                        figmaUrl={figmaUrl || 'test-url'}
+                        onTextExtracted={handleSimpleTextExtracted}
+                        onClose={() => {
+                          console.log('🚀 MODAL CLOSE CLICKED');
+                          setShowSimpleEntry(false);
+                        }}
+                      />
+                    </>
                   )}
                 </div>
               )}

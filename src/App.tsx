@@ -14,7 +14,7 @@ import { FigmaIntegration } from './utils/figmaIntegration';
 import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
 import { FigmaStructurePreserver } from './utils/figmaStructurePreserver';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
-// SimpleTextEntry removed - using automatic extraction now
+
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -31,16 +31,13 @@ function App() {
   } | null>(null);
   const [figmaFileId, setFigmaFileId] = useState<string>('');
   const [figmaUrl, setFigmaUrl] = useState<string>('');
-  // Removed manual entry state - using automatic extraction now
+
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
   };
 
   const handleImportComplete = (importedPrototype: Prototype) => {
-    console.log('🔥 NEW CODE LOADED - App.tsx: handleImportComplete called with prototype:', importedPrototype);
-    
-    // Force state updates in sequence to ensure re-renders
     setPrototype(importedPrototype);
     setEditedElements(importedPrototype.textElements);
     
@@ -50,25 +47,15 @@ function App() {
       if (fileId) {
         setFigmaFileId(fileId);
       }
-      
-      // Set figmaUrl and force re-render
       setFigmaUrl(importedPrototype.url);
-      console.log('🔥 NEW CODE: Set figmaUrl to:', importedPrototype.url);
-      
-      // With automatic extraction, we should always have text elements
-      // If somehow we don't, still proceed to export (user can manually add later)
-      if (importedPrototype.textElements.length === 0) {
-        console.log('⚠️ No text elements extracted - this is unusual with automatic extraction');
-      }
     }
     
-    // Complete the import step and move to export (only if we have text elements)
+    // Complete the import step and move to export
     completeStep('import');
     setCurrentStep('export');
-    console.log('🔥 NEW CODE: Moving to export step');
   };
 
-  // Removed manual text handler - using automatic extraction now
+
 
   const handleExportComplete = (selectedElementIds?: string[]) => {
     if (prototype && selectedElementIds) {

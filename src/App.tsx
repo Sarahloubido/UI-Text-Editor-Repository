@@ -468,11 +468,28 @@ function App() {
       />
       
       <main className="py-8">
-                  {currentStep === 'import' && (
+                  <div style={{ position: 'fixed', top: '50px', left: '10px', background: 'blue', color: 'white', padding: '10px', zIndex: 9999 }}>
+            🔍 currentStep: {currentStep}
+          </div>
+          
+          {currentStep === 'import' && (
             <>
               <PrototypeImport onImportComplete={handleImportComplete} />
               
               {/* ALWAYS SHOW FOR TESTING */}
+              <div style={{ background: 'yellow', padding: '20px', margin: '20px' }}>
+                🚀 THIS SHOULD ALWAYS SHOW ON IMPORT STEP
+                <button
+                  onClick={() => {
+                    console.log('🚀 YELLOW TEST BUTTON CLICKED');
+                    setShowSimpleEntry(true);
+                  }}
+                  style={{ background: 'red', color: 'white', padding: '10px', margin: '10px' }}
+                >
+                  🚀 YELLOW TEST BUTTON
+                </button>
+              </div>
+              
               {currentStep === 'import' && (
                 <div className="mt-8">
                                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">

@@ -14,7 +14,7 @@ import { FigmaIntegration } from './utils/figmaIntegration';
 import { FigmaPluginGenerator } from './utils/figmaPluginGenerator';
 import { FigmaStructurePreserver } from './utils/figmaStructurePreserver';
 import { FigmaPluginInstructions } from './components/FigmaPluginInstructions';
-import { SimpleTextEntry } from './components/SimpleTextEntry';
+// SimpleTextEntry removed - using automatic extraction now
 
 function App() {
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('import');
@@ -31,7 +31,7 @@ function App() {
   } | null>(null);
   const [figmaFileId, setFigmaFileId] = useState<string>('');
   const [figmaUrl, setFigmaUrl] = useState<string>('');
-  const [showSimpleEntry, setShowSimpleEntry] = useState<boolean>(false);
+  // Removed manual entry state - using automatic extraction now
 
   const completeStep = (step: WorkflowStep) => {
     setCompletedSteps(prev => new Set([...prev, step]));
@@ -55,17 +55,10 @@ function App() {
       setFigmaUrl(importedPrototype.url);
       console.log('🔥 NEW CODE: Set figmaUrl to:', importedPrototype.url);
       
-      // If no text elements, stay on import step to show extraction options
+      // With automatic extraction, we should always have text elements
+      // If somehow we don't, still proceed to export (user can manually add later)
       if (importedPrototype.textElements.length === 0) {
-        console.log('🔥 NEW CODE: No text elements found, staying on import to show extraction options');
-        
-        // Force a small delay to ensure all state updates complete
-        setTimeout(() => {
-          console.log('🔥 NEW CODE: State should now be updated, checking UI condition...');
-        }, 100);
-        
-        completeStep('import');
-        return; // Don't move to export yet
+        console.log('⚠️ No text elements extracted - this is unusual with automatic extraction');
       }
     }
     
@@ -75,27 +68,7 @@ function App() {
     console.log('🔥 NEW CODE: Moving to export step');
   };
 
-  const handleSimpleTextExtracted = (textElements: TextElement[]) => {
-    if (prototype) {
-      const updatedPrototype: Prototype = {
-        ...prototype,
-        textElements: textElements,
-        extractionMetadata: {
-          ...prototype.extractionMetadata,
-          extractionMethod: 'Simple Manual Entry',
-          extractedAt: new Date(),
-          confidence: 1.0
-        }
-      };
-      setPrototype(updatedPrototype);
-      setEditedElements(textElements);
-      setShowSimpleEntry(false);
-      
-      // Move to export step with text
-      completeStep('import');
-      setCurrentStep('export');
-    }
-  };
+  // Removed manual text handler - using automatic extraction now
 
   const handleExportComplete = (selectedElementIds?: string[]) => {
     if (prototype && selectedElementIds) {
@@ -468,94 +441,8 @@ function App() {
       />
       
       <main className="py-8">
-                  <div style={{ position: 'fixed', top: '50px', left: '10px', background: 'blue', color: 'white', padding: '10px', zIndex: 9999 }}>
-            🔍 currentStep: {currentStep}
-          </div>
-          
-          {currentStep === 'import' && (
-            <>
-              <PrototypeImport onImportComplete={handleImportComplete} />
-              
-              {/* ALWAYS SHOW FOR TESTING */}
-              <div style={{ background: 'yellow', padding: '20px', margin: '20px' }}>
-                🚀 THIS SHOULD ALWAYS SHOW ON IMPORT STEP
-                <button
-                  onClick={() => {
-                    console.log('🚀 YELLOW TEST BUTTON CLICKED');
-                    setShowSimpleEntry(true);
-                  }}
-                  style={{ background: 'red', color: 'white', padding: '10px', margin: '10px' }}
-                >
-                  🚀 YELLOW TEST BUTTON
-                </button>
-              </div>
-              
-              {currentStep === 'import' && (
-                <div className="mt-8">
-                                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                      <div className="flex items-start">
-                        <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-                        <div>
-                          <h4 className="font-medium text-blue-900 mb-2">Ready for Your Content!</h4>
-                          <p className="text-sm text-blue-800">
-                            Your Figma file is connected. Now let's add the actual text content you want to edit.
-                            Just list out the text elements and we'll handle the rest automatically.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  
-                  <div className="space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-green-900 mb-2">📝 Add Your Text Content</h4>
-                      <p className="text-green-800 mb-4">
-                        Your Figma URL has been imported! Now simply <strong>add the text content</strong> from your design. 
-                        This is quick, easy, and gives you full control over what gets edited.
-                      </p>
-                      <div className="text-center">
-                        <button
-                          onClick={() => {
-                            console.log('🚀 TEST BUTTON CLICKED - Opening SimpleTextEntry modal');
-                            setShowSimpleEntry(true);
-                          }}
-                          className="inline-flex items-center justify-center px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-                        >
-                          🚀 TEST: Add Text Content
-                        </button>
-                      </div>
-                      <div className="mt-3 text-sm text-green-800 text-center">
-                        <strong>Simple & Fast:</strong> Just type or paste your text → Smart detection handles the rest!
-                      </div>
-                    </div>
-                    
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-blue-900 mb-2">✨ Smart & Simple</h4>
-                      <p className="text-blue-800 text-sm">
-                        Our smart detection automatically identifies buttons, headings, navigation, and other UI elements.
-                        You just provide the text - we handle all the technical details for perfect editing workflow.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Simple Text Entry Component - TESTING */}
-                  {showSimpleEntry && (
-                    <>
-                      <div style={{ position: 'fixed', top: '10px', left: '10px', background: 'red', color: 'white', padding: '10px', zIndex: 9999 }}>
-                        🚀 MODAL SHOULD BE OPEN (showSimpleEntry: {showSimpleEntry.toString()})
-                      </div>
-                      <SimpleTextEntry 
-                        figmaUrl={figmaUrl || 'test-url'}
-                        onTextExtracted={handleSimpleTextExtracted}
-                        onClose={() => {
-                          console.log('🚀 MODAL CLOSE CLICKED');
-                          setShowSimpleEntry(false);
-                        }}
-                      />
-                    </>
-                  )}
-                </div>
-              )}
-            </>
+                  {currentStep === 'import' && (
+            <PrototypeImport onImportComplete={handleImportComplete} />
           )}
         
         {currentStep === 'export' && prototype && (

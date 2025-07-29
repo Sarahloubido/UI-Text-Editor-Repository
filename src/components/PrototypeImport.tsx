@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, ExternalLink, FileImage, Layers, Download } from 'lucide-react';
 import { Prototype, TextElement } from '../types';
-import { PrototypeTextExtractor } from '../utils/textExtractor';
+import { FigmaPublicExtractor } from '../utils/figmaPublicExtractor';
 import { UserGuide } from './UserGuide';
 
 interface PrototypeImportProps {
@@ -12,7 +12,7 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
   const [importMethod, setImportMethod] = useState<'file' | 'url' | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [url, setUrl] = useState('');
-  const [extractor] = useState(() => new PrototypeTextExtractor());
+  const [extractor] = useState(() => FigmaPublicExtractor.getInstance());
   const [hasImported, setHasImported] = useState(false);
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +53,7 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
       return;
     }
 
-    console.log('🟢 COMPLETELY DIRECT import - NO extraction chains:', url);
+    console.log('🚀 AUTOMATIC FIGMA TEXT EXTRACTION - Starting:', url);
     setHasImported(true);
     setIsProcessing(true);
     
@@ -79,13 +79,13 @@ export const PrototypeImport: React.FC<PrototypeImportProps> = ({ onImportComple
         fileName = 'Figma Design';
       }
 
-      console.log('🟢 Step 3: URL imported successfully - NO TEXT ELEMENTS CREATED');
+      console.log('🟢 Step 3: Attempting automatic text extraction...');
 
-      // NO fake text elements - only real extraction allowed
-      const textElements: TextElement[] = [];
+      // AUTOMATIC TEXT EXTRACTION - No manual entry needed!
+      const textElements = await extractor.extractTextFromFigmaUrl(url);
       
-      console.log('🟢 Step 4: Zero text elements - real extraction required');
-      console.log('🟢 Step 5: User must use Screenshot+OCR or API extraction');
+      console.log(`🟢 Step 4: Extracted ${textElements.length} text elements automatically!`);
+      console.log('🟢 Step 5: Text preview:', textElements.map(el => el.originalText).slice(0, 5));
       
       const source = url.includes('figma.com') ? 'figma' : url.includes('cursor.') ? 'cursor' : 'bolt';
       console.log('🟢 Step 6: Determined source as:', source);
